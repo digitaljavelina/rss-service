@@ -6,7 +6,7 @@ import { buildFeed } from '../services/feed-builder.js';
 export const feedsRouter = Router();
 
 // Feed serving endpoint with content negotiation
-feedsRouter.get('/:identifier', (req, res) => {
+feedsRouter.get('/:identifier', async (req, res) => {
   const { identifier } = req.params;
 
   // Determine format based on Accept header
@@ -25,18 +25,23 @@ feedsRouter.get('/:identifier', (req, res) => {
     contentType = 'application/rss+xml; charset=utf-8';
   }
 
-  // Build feed
-  const xml = buildFeed(identifier, format);
-  if (!xml) {
-    return res.status(404).json({ error: 'Feed not found' });
+  try {
+    // Build feed (now async)
+    const xml = await buildFeed(identifier, format);
+    if (!xml) {
+      return res.status(404).json({ error: 'Feed not found' });
+    }
+
+    // Generate ETag from content hash
+    const etag = createHash('md5').update(xml).digest('hex');
+
+    // Set headers
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+    res.set('ETag', `"${etag}"`);
+    res.send(xml);
+  } catch (error) {
+    console.error('Error building feed:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  // Generate ETag from content hash
-  const etag = createHash('md5').update(xml).digest('hex');
-
-  // Set headers
-  res.set('Content-Type', contentType);
-  res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
-  res.set('ETag', `"${etag}"`);
-  res.send(xml);
 });
