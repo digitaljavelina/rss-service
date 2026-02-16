@@ -17,6 +17,14 @@ This roadmap delivers a self-hosted RSS feed generator by progressing from found
 
 **Goal:** User can access a running web application with persistent storage and feed serving capability.
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project setup with TypeScript and SQLite database layer
+- [ ] 01-02-PLAN.md — Express server with feed serving and content negotiation
+- [ ] 01-03-PLAN.md — Web UI shell with sidebar and theme toggle
+- [ ] 01-04-PLAN.md — Human verification of complete foundation
+
 **Requirements:**
 - DATA-01: System stores feeds and items in SQLite database
 - DATA-02: System persists data across app restarts
@@ -192,7 +200,7 @@ This roadmap delivers a self-hosted RSS feed generator by progressing from found
 
 | Phase | Name | Status | Requirements | Plans |
 |-------|------|--------|--------------|-------|
-| 1 | Foundation & Setup | Not Started | 8 | 0/0 |
+| 1 | Foundation & Setup | Planned | 8 | 0/4 |
 | 2 | Core Feed Creation | Not Started | 7 | 0/0 |
 | 3 | Feed Management | Not Started | 8 | 0/0 |
 | 4 | Advanced Extraction | Not Started | 3 | 0/0 |
