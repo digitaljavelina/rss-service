@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "build:css": "npx @tailwindcss/cli -i ./src/styles/input.css -o ./public/css/styles.css",
+    "dev:css": "npx @tailwindcss/cli -i ./src/styles/input.css -o ./public/css/styles.css --watch",
+    "dev": "concurrently \"npm run dev:css\" \"tsx watch src/server.ts\"",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -31,6 +33,7 @@
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/node": "^25.2.3",
+    "concurrently": "^9.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
