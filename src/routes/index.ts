@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import { feedsRouter } from './feeds.js';
+import { uiRouter } from './ui.js';
 
 // Create main router
 export const router = Router();
 
-// Mount feeds router
+// Mount API routes first (more specific)
 router.use('/feeds', feedsRouter);
 
-// Health check endpoint
-router.get('/', (req, res) => {
-  res.json({ status: 'ok' });
-});
+// Mount UI routes
+router.use('/', uiRouter);
