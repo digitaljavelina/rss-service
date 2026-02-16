@@ -1,0 +1,37 @@
+{
+  "name": "rss-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "alpinejs": "^3.15.8",
+    "better-sqlite3": "^12.6.2",
+    "compression": "^1.8.1",
+    "daisyui": "^5.5.18",
+    "express": "^5.2.1",
+    "feed": "^5.2.0",
+    "get-port": "^7.1.0",
+    "nanoid": "^5.1.6",
+    "notyf": "^3.10.0",
+    "pino": "^10.3.1",
+    "slugify": "^1.6.6",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
