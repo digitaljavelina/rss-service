@@ -85,6 +85,14 @@ Plans:
 
 **Goal:** User can view, edit, delete, and manage multiple feeds through a dashboard.
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Dashboard with feed list, refresh, and delete
+- [ ] 03-02-PLAN.md — Edit feed configuration
+- [ ] 03-03-PLAN.md — Import/export feed configurations
+- [ ] 03-04-PLAN.md — Human verification of feed management
+
 **Requirements:**
 - MGMT-01: User can view all created feeds in a dashboard
 - MGMT-02: User can edit feed configuration (selectors, title, refresh interval)
@@ -103,6 +111,8 @@ Plans:
 5. Duplicate content is not shown in feed output (deduplication works)
 
 **Dependencies:** Phase 2
+
+**Status:** Planned
 
 ---
 
@@ -215,7 +225,7 @@ Plans:
 |-------|------|--------|--------------|-------|
 | 1 | Foundation & Setup | Complete | 8 | 4/4 |
 | 2 | Core Feed Creation | Complete | 7 | 5/5 |
-| 3 | Feed Management | Not Started | 8 | 0/0 |
+| 3 | Feed Management | Planned | 8 | 0/4 |
 | 4 | Advanced Extraction | Not Started | 3 | 0/0 |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 |
