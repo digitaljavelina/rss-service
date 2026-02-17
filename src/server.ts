@@ -19,7 +19,7 @@ async function startServer(): Promise<void> {
       logger.info(`RSS Service running at http://localhost:${port}`);
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 }
