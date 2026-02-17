@@ -4,21 +4,21 @@
 
 **Core Value:** Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
 
-**Current Focus:** Feed Management (Phase 3)
+**Current Focus:** Feed Management (Phase 3) - Complete
 
 ---
 
 ## Current Position
 
-**Phase:** 3 of 6 (Feed Management) - In Progress
-**Plan:** 2 of 3 in phase
-**Status:** In progress
-**Last activity:** 2026-02-17 - Completed 03-02-PLAN.md (feed edit with URL re-detection)
+**Phase:** 3 of 6 (Feed Management) - Complete
+**Plan:** 3 of 3 in phase
+**Status:** Phase complete
+**Last activity:** 2026-02-17 - Completed 03-03-PLAN.md (feed export/import)
 
-**Progress:** █████░░░░░ 31% (11/35 plans)
+**Progress:** ██████░░░░ 34% (12/35 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
-Phase 3: ██████░░░░ 67% (2/3 plans)
+Phase 3: ██████████ 100% (3/3 plans)
 
 ---
 
@@ -28,23 +28,23 @@ Phase 3: ██████░░░░ 67% (2/3 plans)
 |-------|------|--------|--------------|-------|-----------|
 | 1 | Foundation & Setup | Complete ✅ | 8 | 4/4 | 100% |
 | 2 | Core Feed Creation | Complete ✅ | 7 | 5/5 | 100% |
-| 3 | Feed Management | In Progress | 8 | 2/3 | 67% |
+| 3 | Feed Management | Complete ✅ | 8 | 3/3 | 100% |
 | 4 | Advanced Extraction | Not Started | 3 | 0/0 | 0% |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 | 0% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 11/35 plans completed (31%)
+**Overall Progress:** 12/35 plans completed (34%)
 
 ---
 
 ## Performance Metrics
 
-**Milestone:** Foundation complete ✅
-**Velocity:** 4 plans completed
+**Milestone:** Feed Management complete ✅
+**Velocity:** 12 plans completed
 **Rework Rate:** 0%
 
 **Quality Indicators:**
-- Plans completed: 9
+- Plans completed: 12
 - Phase 1 verified by user
 - Phase 2 verified by user
 - Deployed to Vercel production
@@ -54,6 +54,9 @@ Phase 3: ██████░░░░ 67% (2/3 plans)
 - Feed CRUD APIs with auto-detection
 - Simplified Create Feed UI (URL + name only)
 - Feed refresh and XML export endpoints
+- Feed dashboard with list/refresh/delete/edit actions
+- Feed edit with URL re-detection and urlChanged signaling
+- Feed export (JSON download) and import (JSON upload)
 
 ---
 
@@ -99,6 +102,9 @@ Phase 3: ██████░░░░ 67% (2/3 plans)
 | Clear items on URL change | Delete all items and re-fetch fresh when feed URL changes to avoid stale/mismatched items | 2026-02-17 |
 | urlChanged flag in PUT response | Backend signals URL change so client shows specific success message without client-side comparison | 2026-02-17 |
 | Readonly RSS URL as input | Input element for RSS URL display allows triple-click selection and consistent styling | 2026-02-17 |
+| Client-side Blob for JSON export | Avoids new server endpoint; Blob + createObjectURL + revokeObjectURL sufficient for file download | 2026-02-17 |
+| FileReader for JSON import | Reads file client-side, validates, then POSTs to existing /api/feeds endpoint | 2026-02-17 |
+| Reset file input after processing | Allows user to re-select same file for re-import without clearing the value manually | 2026-02-17 |
 
 ### Open Questions
 
@@ -108,7 +114,7 @@ Phase 3: ██████░░░░ 67% (2/3 plans)
 
 ### Active Todos
 
-(None - roadmap created, awaiting phase planning)
+(None - Phase 3 complete, ready for Phase 4 planning)
 
 ### Known Blockers
 
@@ -123,28 +129,31 @@ Phase 3: ██████░░░░ 67% (2/3 plans)
 ## Session Continuity
 
 **Last Session:** 2026-02-17
-**Stopped at:** Completed 03-02-PLAN.md (feed edit with URL re-detection)
+**Stopped at:** Completed 03-03-PLAN.md (feed export/import)
 **Resume file:** None
 
 **Context for Next Session:**
 - Phase 1 Foundation complete and deployed to Vercel
 - Phase 2 Core Feed Creation complete
-- Phase 3 Plans 1-2 complete
+- Phase 3 Feed Management complete (all 3 plans)
 - Production URL: https://rss-service-five.vercel.app/
 - Supabase database with feeds/items tables
 - Auto-detection service: autoDetectSelectors(), autoExtractItems()
 - Preview API: POST /api/preview with auto-detection
 - Feed CRUD API: POST/GET/PUT /api/feeds, GET /api/feeds/:id, DELETE /api/feeds/:id
 - Feed refresh: POST /api/feeds/:id/refresh with deduplication
-- Feed export: GET /api/feeds/:id/export with Content-Disposition
-- Dashboard: GET /feeds (feed table, refresh/delete/edit actions, delete modal)
-- dashboard.js: IIFE, event delegation, native dialog modal
+- Feed export (XML): GET /api/feeds/:id/export with Content-Disposition
+- Dashboard: GET /feeds (feed table, refresh/export/delete/edit actions, delete modal)
+- dashboard.js: IIFE, event delegation, native dialog modal, export/import
+- Export: exportFeed() fetches /api/feeds/:slug, builds config, downloads via Blob
+- Import: FileReader reads JSON, validateFeedConfig(), importFeed() POSTs to /api/feeds
+- Feed config JSON format: { name, url, selectors, itemLimit, exportedAt }
 - Edit page: GET /feeds/:slug/edit with pre-filled form
 - edit-feed.js: IIFE, loadFeed(), validateForm(), PUT with urlChanged detection
 - PUT endpoint clears/re-fetches items when URL changes
 
 **Next Steps:**
-1. Execute Phase 3 Plan 03 (additional feed management features)
+1. Plan and execute Phase 4 (Advanced Extraction)
 
 ---
 
@@ -162,6 +171,11 @@ Phase 3: ██████░░░░ 67% (2/3 plans)
 - Simplified UX: URL → Preview → Create Feed
 - Tested with Hacker News, works correctly
 - All Phase 2 requirements satisfied (CORE-02 superseded by CORE-07)
+
+### Phase 3 Complete (2026-02-17)
+- All 3 plans executed (dashboard, edit, export/import)
+- Feed management fully implemented
+- No blockers for Phase 4
 
 ---
 
