@@ -122,6 +122,13 @@ Plans:
 
 **Goal:** User can extract content from complex websites without manually writing CSS selectors.
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Install headless browser dependencies and create browser fetcher service
+- [ ] 04-02-PLAN.md — Wire headless support into APIs and add selector adjustment UI
+- [ ] 04-03-PLAN.md — README update and human verification
+
 **Requirements:**
 - CORE-06: User can visually select page elements to generate CSS selectors (click-to-select)
 - CORE-07: System auto-detects common content patterns (article lists, titles, dates)
@@ -228,7 +235,7 @@ Plans:
 | 1 | Foundation & Setup | Complete | 8 | 4/4 |
 | 2 | Core Feed Creation | Complete | 7 | 5/5 |
 | 3 | Feed Management | Planned | 8 | 0/4 |
-| 4 | Advanced Extraction | Not Started | 3 | 0/0 |
+| 4 | Advanced Extraction | Planned | 3 | 0/3 |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 |
 
