@@ -12,8 +12,13 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 - **Auto-Detection** - Automatically finds content patterns (articles, lists, links)
 - **Preview Before Save** - See what you'll get before creating the feed
 - **Multiple Formats** - RSS 2.0 and Atom support
-- **Feed Export** - Download feeds as XML files
-- **Manual Refresh** - Update feeds on demand
+- **Feed Dashboard** - View all feeds with status, item count, and last updated time
+- **Edit Feeds** - Update feed name, URL, or selectors with automatic re-detection
+- **Delete Feeds** - Remove feeds with confirmation dialog
+- **Manual Refresh** - Update individual feeds on demand with single-row updates
+- **Export/Import** - Download feed configs as JSON for backup, restore from JSON files
+- **XML Export** - Download feeds as static RSS or Atom XML files
+- **Content Deduplication** - SHA-256 based GUIDs prevent duplicate items
 - **Dark Mode** - Light and dark theme with persistence
 
 ## Tech Stack
@@ -138,6 +143,22 @@ Content-Type: application/json
 
 Creates a new feed with auto-detected selectors.
 
+### List Feeds
+
+```
+GET /api/feeds
+```
+
+Returns all feeds with item counts.
+
+### Get Feed (JSON)
+
+```
+GET /api/feeds/:id
+```
+
+Returns feed details and items as JSON.
+
 ### Get Feed (RSS/Atom)
 
 ```
@@ -146,27 +167,56 @@ GET /feeds/:slug
 
 Returns RSS 2.0 by default. Request Atom with `Accept: application/atom+xml` header.
 
+### Update Feed
+
+```
+PUT /api/feeds/:id
+Content-Type: application/json
+
+{ "name": "Updated Name", "url": "https://example.com/new" }
+```
+
+Updates feed configuration. If URL changes, items are cleared and re-fetched. Response includes `urlChanged: true` when URL was modified.
+
+### Delete Feed
+
+```
+DELETE /api/feeds/:id
+```
+
+Permanently removes feed and all associated items.
+
 ### Refresh Feed
 
 ```
 POST /api/feeds/:id/refresh
 ```
 
-Manually refresh a feed to check for new content.
+Manually refresh a feed to check for new content. Uses content-based deduplication to avoid duplicates.
 
-### Export Feed
+### Export Feed (XML)
 
 ```
 GET /api/feeds/:id/export?format=rss
 GET /api/feeds/:id/export?format=atom
 ```
 
-Download feed as XML file.
+Download feed as XML file with `Content-Disposition` header for browser download.
 
 **Response Headers:**
 - `Content-Type: application/rss+xml` or `application/atom+xml`
 - `Cache-Control: public, max-age=300`
 - `ETag: "..."` for cache validation
+
+## Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Home page |
+| `/feeds/new` | Create a new feed (URL + preview + save) |
+| `/feeds` | Dashboard — list all feeds with actions |
+| `/feeds/:slug/edit` | Edit feed configuration |
+| `/feeds/:slug` | RSS/Atom feed output |
 
 ## Project Status
 
@@ -174,7 +224,7 @@ Download feed as XML file.
 |-------|--------|
 | 1. Foundation & Setup | ✅ Complete |
 | 2. Core Feed Creation | ✅ Complete |
-| 3. Feed Management | ⏳ Planned |
+| 3. Feed Management | ✅ Complete |
 | 4. Advanced Extraction | ⏳ Planned |
 | 5. Automation & Scheduling | ⏳ Planned |
 | 6. Platform Integrations | ⏳ Planned |

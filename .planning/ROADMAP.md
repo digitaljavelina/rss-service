@@ -9,6 +9,8 @@
 
 This roadmap delivers a self-hosted RSS feed generator by progressing from foundation to core value to enhancements. Each phase delivers a complete, verifiable capability.
 
+**Phase Completion Rule:** At the end of every phase, update README.md to reflect current project status, new features, and any API changes delivered in that phase.
+
 ---
 
 ## Phases
