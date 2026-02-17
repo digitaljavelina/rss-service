@@ -11,14 +11,14 @@
 ## Current Position
 
 **Phase:** 3 of 6 (Feed Management) - In Progress
-**Plan:** 1 of 3 in phase
+**Plan:** 2 of 3 in phase
 **Status:** In progress
-**Last activity:** 2026-02-17 - Completed 03-01-PLAN.md (feed management dashboard)
+**Last activity:** 2026-02-17 - Completed 03-02-PLAN.md (feed edit with URL re-detection)
 
-**Progress:** █████░░░░░ 29% (10/35 plans)
+**Progress:** █████░░░░░ 31% (11/35 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
-Phase 3: ███░░░░░░░ 33% (1/3 plans)
+Phase 3: ██████░░░░ 67% (2/3 plans)
 
 ---
 
@@ -28,12 +28,12 @@ Phase 3: ███░░░░░░░ 33% (1/3 plans)
 |-------|------|--------|--------------|-------|-----------|
 | 1 | Foundation & Setup | Complete ✅ | 8 | 4/4 | 100% |
 | 2 | Core Feed Creation | Complete ✅ | 7 | 5/5 | 100% |
-| 3 | Feed Management | In Progress | 8 | 1/3 | 33% |
+| 3 | Feed Management | In Progress | 8 | 2/3 | 67% |
 | 4 | Advanced Extraction | Not Started | 3 | 0/0 | 0% |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 | 0% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 10/35 plans completed (29%)
+**Overall Progress:** 11/35 plans completed (31%)
 
 ---
 
@@ -96,6 +96,9 @@ Phase 3: ███░░░░░░░ 33% (1/3 plans)
 | Event delegation for table actions | Single document click handler scales to dynamic rows without per-row listeners | 2026-02-17 |
 | DOM removal on delete vs reload | Remove row immediately for faster UX, check empty state after | 2026-02-17 |
 | Native dialog for modals | daisyUI dialog element with showModal()/close() - no JS library needed | 2026-02-17 |
+| Clear items on URL change | Delete all items and re-fetch fresh when feed URL changes to avoid stale/mismatched items | 2026-02-17 |
+| urlChanged flag in PUT response | Backend signals URL change so client shows specific success message without client-side comparison | 2026-02-17 |
+| Readonly RSS URL as input | Input element for RSS URL display allows triple-click selection and consistent styling | 2026-02-17 |
 
 ### Open Questions
 
@@ -120,27 +123,28 @@ Phase 3: ███░░░░░░░ 33% (1/3 plans)
 ## Session Continuity
 
 **Last Session:** 2026-02-17
-**Stopped at:** Completed 03-01-PLAN.md (feed management dashboard)
+**Stopped at:** Completed 03-02-PLAN.md (feed edit with URL re-detection)
 **Resume file:** None
 
 **Context for Next Session:**
 - Phase 1 Foundation complete and deployed to Vercel
 - Phase 2 Core Feed Creation complete
-- Phase 3 Plan 1 (Feed Management Dashboard) complete
+- Phase 3 Plans 1-2 complete
 - Production URL: https://rss-service-five.vercel.app/
 - Supabase database with feeds/items tables
 - Auto-detection service: autoDetectSelectors(), autoExtractItems()
 - Preview API: POST /api/preview with auto-detection
-- Feed CRUD API: POST/GET /api/feeds, GET /api/feeds/:id, DELETE /api/feeds/:id
+- Feed CRUD API: POST/GET/PUT /api/feeds, GET /api/feeds/:id, DELETE /api/feeds/:id
 - Feed refresh: POST /api/feeds/:id/refresh with deduplication
 - Feed export: GET /api/feeds/:id/export with Content-Disposition
-- Dashboard: GET /feeds (feed table, refresh/delete actions, delete modal)
+- Dashboard: GET /feeds (feed table, refresh/delete/edit actions, delete modal)
 - dashboard.js: IIFE, event delegation, native dialog modal
-- /feeds/:slug/edit route stub created (serves 404 until Plan 02 adds editFeed template)
+- Edit page: GET /feeds/:slug/edit with pre-filled form
+- edit-feed.js: IIFE, loadFeed(), validateForm(), PUT with urlChanged detection
+- PUT endpoint clears/re-fetches items when URL changes
 
 **Next Steps:**
-1. Execute Phase 3 Plan 02 (URL editing with re-detection)
-2. Execute Phase 3 Plan 03 (additional feed management features)
+1. Execute Phase 3 Plan 03 (additional feed management features)
 
 ---
 
