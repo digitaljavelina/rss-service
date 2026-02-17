@@ -3,6 +3,8 @@
  * POST /api/feeds - Create new feed
  * GET /api/feeds - List all feeds
  * GET /api/feeds/:id - Get single feed by ID or slug
+ * POST /api/feeds/:id/refresh - Manual refresh of feed
+ * GET /api/feeds/:id/export - Download feed as XML file
  */
 
 import { Router, Request, Response } from 'express';
@@ -14,6 +16,8 @@ import { supabase } from '../../db/index.js';
 import { fetchPage } from '../../services/page-fetcher.js';
 import { extractItems } from '../../services/content-extractor.js';
 import { parseDate } from '../../services/date-parser.js';
+import { invalidateFeed } from '../../services/feed-cache.js';
+import { buildFeed } from '../../services/feed-builder.js';
 import type { FeedSelectors, ExtractedItem } from '../../types/feed.js';
 
 // Create feeds API router
@@ -251,5 +255,183 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Get feed error:', error);
     res.status(500).json({ success: false, errors: ['Internal server error'] });
+  }
+});
+
+// POST /:id/refresh - Manual refresh of feed
+feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    // Find feed by id or slug
+    const { data: feed, error: feedError } = await supabase
+      .from('feeds')
+      .select('*')
+      .or(`id.eq.${id},slug.eq.${id}`)
+      .single();
+
+    if (feedError || !feed) {
+      res.status(404).json({ error: 'Feed not found' });
+      return;
+    }
+
+    const feedRow = feed as FeedRow;
+
+    // Parse selectors from JSON
+    let selectors: FeedSelectors;
+    try {
+      selectors = JSON.parse(feedRow.selectors);
+    } catch {
+      res.status(400).json({ error: 'Invalid feed selectors' });
+      return;
+    }
+
+    // Fetch page
+    const fetchResult = await fetchPage(feedRow.url || '');
+    if (!fetchResult.ok || !fetchResult.html) {
+      res.status(400).json({
+        error: `Failed to fetch source: ${fetchResult.error}`,
+      });
+      return;
+    }
+
+    // Extract items
+    const extractedItems = extractItems(fetchResult.html, feedRow.url || '', selectors);
+
+    // Get existing GUIDs to avoid duplicates
+    const { data: existingItems } = await supabase
+      .from('items')
+      .select('guid')
+      .eq('feed_id', feedRow.id);
+
+    const existingGuids = new Set(existingItems?.map((i) => i.guid) || []);
+
+    // Filter to new items only and prepare for insert
+    const newItems: Array<{
+      id: string;
+      feed_id: string;
+      title: string;
+      link: string;
+      description: string | null;
+      pub_date: string;
+      guid: string;
+    }> = [];
+
+    for (const item of extractedItems) {
+      const guid = createHash('sha256')
+        .update(`${feedRow.id}:${item.title}:${item.link}`)
+        .digest('hex')
+        .substring(0, 16);
+
+      if (!existingGuids.has(guid)) {
+        const pubDate = item.dateText ? parseDate(item.dateText) : undefined;
+        newItems.push({
+          id: nanoid(),
+          feed_id: feedRow.id,
+          title: item.title,
+          link: item.link,
+          description: item.description || null,
+          pub_date: pubDate?.toISOString() || new Date().toISOString(),
+          guid: guid,
+        });
+      }
+    }
+
+    // Insert new items
+    if (newItems.length > 0) {
+      await supabase.from('items').insert(newItems);
+    }
+
+    // Enforce item limit - delete oldest items if over limit
+    const { count } = await supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('feed_id', feedRow.id);
+
+    if (count && count > feedRow.item_limit) {
+      const toDelete = count - feedRow.item_limit;
+      const { data: oldItems } = await supabase
+        .from('items')
+        .select('id')
+        .eq('feed_id', feedRow.id)
+        .order('pub_date', { ascending: true })
+        .limit(toDelete);
+
+      if (oldItems && oldItems.length > 0) {
+        await supabase
+          .from('items')
+          .delete()
+          .in(
+            'id',
+            oldItems.map((i) => i.id)
+          );
+      }
+    }
+
+    // Update feed's updated_at timestamp
+    await supabase
+      .from('feeds')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', feedRow.id);
+
+    // Invalidate cache using existing function
+    invalidateFeed(feedRow.slug);
+    invalidateFeed(feedRow.id);
+
+    res.json({
+      success: true,
+      newItems: newItems.length,
+      totalItems: count ? Math.min(count + newItems.length, feedRow.item_limit) : newItems.length,
+    });
+  } catch (error) {
+    console.error('Refresh error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Refresh failed',
+    });
+  }
+});
+
+// GET /:id/export - Download feed as XML file
+feedsApiRouter.get('/:id/export', async (req: Request, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const formatParam = typeof req.query.format === 'string' ? req.query.format : '';
+  const format: 'rss2' | 'atom1' = formatParam === 'atom' ? 'atom1' : 'rss2';
+
+  try {
+    // Find feed to get the name for filename
+    const { data: feed, error: feedError } = await supabase
+      .from('feeds')
+      .select('name, slug')
+      .or(`id.eq.${id},slug.eq.${id}`)
+      .single();
+
+    if (feedError || !feed) {
+      res.status(404).json({ error: 'Feed not found' });
+      return;
+    }
+
+    // Build the feed XML
+    const xml = await buildFeed(id, format);
+    if (!xml) {
+      res.status(404).json({ error: 'Feed not found' });
+      return;
+    }
+
+    // Generate filename
+    const extension = format === 'atom1' ? 'atom.xml' : 'rss.xml';
+    const filename = `${feed.slug}-${extension}`;
+
+    // Set headers for file download
+    res.setHeader(
+      'Content-Type',
+      format === 'atom1' ? 'application/atom+xml; charset=utf-8' : 'application/rss+xml; charset=utf-8'
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(xml);
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Export failed',
+    });
   }
 });
