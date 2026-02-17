@@ -18,3 +18,8 @@ uiRouter.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(servePage('home'));
 });
+
+uiRouter.get('/create', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(servePage('create'));
+});
