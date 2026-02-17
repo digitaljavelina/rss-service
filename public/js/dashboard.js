@@ -173,11 +173,13 @@
   }
 
   /**
-   * Refresh a feed by ID
+   * Refresh a feed by ID - updates only the single row
    */
   async function refreshFeed(feedId) {
-    // Find and disable the refresh button
-    const refreshBtn = feedList.querySelector('[data-action="refresh"][data-feed-id="' + feedId + '"]');
+    // Find the row and refresh button
+    const row = feedList.querySelector('tr[data-feed-id="' + feedId + '"]');
+    const refreshBtn = row ? row.querySelector('[data-action="refresh"]') : null;
+
     if (refreshBtn) {
       refreshBtn.disabled = true;
       refreshBtn.textContent = 'Refreshing...';
@@ -194,8 +196,15 @@
         throw new Error(result.error || 'Refresh failed');
       }
 
-      // Reload the feed list to show updated data
-      await loadFeeds();
+      // Fetch updated feed data to refresh the row
+      if (row) {
+        const feedResponse = await fetch('/api/feeds/' + feedId);
+        if (feedResponse.ok) {
+          const feed = await feedResponse.json();
+          const newRow = createFeedRow(feed);
+          row.parentNode.replaceChild(newRow, row);
+        }
+      }
     } catch (error) {
       alert('Failed to refresh feed: ' + (error.message || 'Unknown error'));
 
