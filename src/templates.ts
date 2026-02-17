@@ -108,5 +108,115 @@ export const pages: Record<string, string> = {
       <div class="text-sm">Ready to create your first feed? Click the button above or use the "Create Feed" link in the sidebar.</div>
     </div>
   </div>
-</div>`
+</div>`,
+
+  create: `<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold mb-8">Create New Feed</h1>
+
+  <!-- Error display -->
+  <div id="preview-errors" class="alert alert-warning mb-6 hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <span id="preview-error-text"></span>
+  </div>
+
+  <!-- Success section -->
+  <div id="success-section" class="alert alert-success mb-6 hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <div>
+      <h3 class="font-bold">Feed Created Successfully!</h3>
+      <div class="text-sm">Your feed is ready. <a id="feed-url-link" href="#" target="_blank" class="link link-primary">Open RSS Feed</a></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Feed Details Card -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">Feed Details</h2>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Feed Name</span>
+          </label>
+          <input type="text" id="feed-name" placeholder="My News Feed" class="input input-bordered" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Source URL</span>
+          </label>
+          <input type="url" id="source-url" placeholder="https://example.com/news" class="input input-bordered" required />
+        </div>
+      </div>
+    </div>
+
+    <!-- CSS Selectors Card -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title">CSS Selectors</h2>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Item Container</span>
+          </label>
+          <input type="text" id="selector-item" placeholder=".article, .post" class="input input-bordered font-mono" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Title Selector</span>
+          </label>
+          <input type="text" id="selector-title" placeholder="h2, .title" class="input input-bordered font-mono" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Link Selector (optional)</span>
+          </label>
+          <input type="text" id="selector-link" placeholder="a" class="input input-bordered font-mono" />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Description Selector (optional)</span>
+          </label>
+          <input type="text" id="selector-description" placeholder=".summary, p" class="input input-bordered font-mono" />
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Date Selector (optional)</span>
+          </label>
+          <input type="text" id="selector-date" placeholder=".date, time" class="input input-bordered font-mono" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex gap-4 mt-6">
+    <button id="btn-preview" class="btn btn-outline">
+      <span class="loading loading-spinner loading-sm hidden"></span>
+      Preview
+    </button>
+    <button id="btn-save" class="btn btn-primary" disabled>
+      <span class="loading loading-spinner loading-sm hidden"></span>
+      Save Feed
+    </button>
+  </div>
+
+  <!-- Preview Section -->
+  <div id="preview-section" class="mt-8 hidden">
+    <div class="divider">Preview Results</div>
+
+    <div id="preview-meta" class="text-sm text-base-content/70 mb-4"></div>
+
+    <div id="preview-items" class="space-y-4"></div>
+  </div>
+</div>
+<script src="/js/create-feed.js"></script>`
 };
