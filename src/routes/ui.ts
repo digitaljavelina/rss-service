@@ -28,3 +28,8 @@ uiRouter.get('/feeds', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(servePage('feeds'));
 });
+
+uiRouter.get('/feeds/:slug/edit', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(servePage('editFeed'));
+});

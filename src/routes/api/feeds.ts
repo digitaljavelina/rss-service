@@ -406,6 +406,160 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
   }
 });
 
+// PUT /:id - Update feed name, url, and/or item limit
+feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const body = req.body as { name?: string; url?: string; itemLimit?: number };
+    const errors: string[] = [];
+
+    // Validate name
+    if (!body.name) {
+      errors.push('name is required');
+    } else if (typeof body.name !== 'string' || body.name.trim().length < 1 || body.name.trim().length > 100) {
+      errors.push('name must be between 1 and 100 characters');
+    }
+
+    // Validate url if provided
+    if (body.url !== undefined) {
+      if (!body.url) {
+        errors.push('url cannot be empty');
+      } else {
+        try {
+          new URL(body.url);
+        } catch {
+          errors.push('url must be a valid URL');
+        }
+      }
+    }
+
+    // Validate itemLimit if provided
+    if (body.itemLimit !== undefined) {
+      const limit = Number(body.itemLimit);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+        errors.push('itemLimit must be a whole number between 1 and 1000');
+      }
+    }
+
+    if (errors.length > 0) {
+      res.status(400).json({ success: false, errors });
+      return;
+    }
+
+    // Find feed by id or slug
+    const { data: feed, error: feedError } = await supabase
+      .from('feeds')
+      .select('*')
+      .or(`id.eq.${id},slug.eq.${id}`)
+      .single();
+
+    if (feedError || !feed) {
+      res.status(404).json({ success: false, errors: ['Feed not found'] });
+      return;
+    }
+
+    const feedRow = feed as FeedRow;
+    const name = body.name!.trim();
+    const itemLimit = body.itemLimit !== undefined ? Number(body.itemLimit) : feedRow.item_limit;
+    const newUrl = body.url !== undefined ? body.url.trim() : feedRow.url;
+    const urlChanged = newUrl !== feedRow.url;
+
+    let updateData: Record<string, unknown> = {
+      name,
+      item_limit: itemLimit,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (urlChanged && newUrl) {
+      // Fetch new URL and re-detect selectors
+      const fetchResult = await fetchPage(newUrl);
+      if (!fetchResult.ok || !fetchResult.html) {
+        res.status(400).json({
+          success: false,
+          errors: [`Failed to fetch new URL: ${fetchResult.error || 'Unknown error'}`],
+        });
+        return;
+      }
+
+      const extraction = autoExtractItems(fetchResult.html, newUrl);
+      if (!extraction || extraction.items.length === 0) {
+        res.status(400).json({
+          success: false,
+          errors: ['Could not detect any content items on the new URL. The page may not have a recognizable article list.'],
+        });
+        return;
+      }
+
+      // Update URL, selectors
+      updateData = {
+        ...updateData,
+        url: newUrl,
+        selectors: JSON.stringify(extraction.selectors),
+      };
+
+      // Delete existing items and re-fetch with new selectors
+      await supabase.from('items').delete().eq('feed_id', feedRow.id);
+
+      // Insert fresh items
+      const itemsWithDates: ExtractedItem[] = extraction.items.map((item) => ({
+        ...item,
+        pubDate: item.dateText ? parseDate(item.dateText) : undefined,
+      }));
+
+      if (itemsWithDates.length > 0) {
+        await supabase.from('items').insert(
+          itemsWithDates.map((item) => ({
+            id: nanoid(),
+            feed_id: feedRow.id,
+            title: item.title,
+            link: item.link,
+            description: item.description || null,
+            pub_date: item.pubDate?.toISOString() || new Date().toISOString(),
+            guid: generateGuid(feedRow.id, item),
+          }))
+        );
+      }
+    } else {
+      updateData.url = feedRow.url;
+    }
+
+    // Apply update
+    const { data: updatedFeed, error: updateError } = await supabase
+      .from('feeds')
+      .update(updateData)
+      .eq('id', feedRow.id)
+      .select()
+      .single();
+
+    if (updateError || !updatedFeed) {
+      console.error('Error updating feed:', updateError);
+      res.status(500).json({ success: false, errors: ['Failed to update feed'] });
+      return;
+    }
+
+    // Invalidate cache
+    invalidateFeed(feedRow.slug);
+    invalidateFeed(feedRow.id);
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const updated = updatedFeed as FeedRow;
+    res.status(200).json({
+      id: updated.id,
+      slug: updated.slug,
+      name: updated.name,
+      url: updated.url,
+      itemLimit: updated.item_limit,
+      feedUrl: `${baseUrl}/feeds/${updated.slug}`,
+      updatedAt: updated.updated_at,
+      urlChanged,
+    });
+  } catch (error) {
+    console.error('Update feed error:', error);
+    res.status(500).json({ success: false, errors: ['Internal server error'] });
+  }
+});
+
 // DELETE /:id - Delete a feed and its items
 feedsApiRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;

@@ -162,6 +162,86 @@ export const pages: Record<string, string> = {
 </div>
 <script src="/js/dashboard.js"></script>`,
 
+  editFeed: `<div class="max-w-2xl mx-auto">
+  <div class="flex items-center justify-between mb-2">
+    <h1 class="text-3xl font-bold">Edit Feed</h1>
+    <a href="/feeds" class="btn btn-ghost btn-sm">Back to Dashboard</a>
+  </div>
+  <p class="text-base-content/70 mb-8">Update your feed configuration.</p>
+
+  <!-- Error display -->
+  <div id="edit-errors" class="alert alert-warning mb-6 hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <span id="edit-error-text"></span>
+  </div>
+
+  <!-- Success display -->
+  <div id="edit-success" class="alert alert-success mb-6 hidden">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span id="edit-success-text"></span>
+  </div>
+
+  <!-- Edit Form Card -->
+  <div class="card bg-base-200">
+    <div class="card-body">
+      <!-- Hidden feed id -->
+      <input type="hidden" id="feed-id" />
+
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Feed name</span>
+        </label>
+        <input type="text" id="feed-name" class="input input-bordered" maxlength="100" required />
+      </div>
+
+      <div class="form-control mt-4">
+        <label class="label">
+          <span class="label-text">Source URL</span>
+        </label>
+        <input type="url" id="source-url" class="input input-bordered" required />
+        <label class="label">
+          <span class="label-text-alt text-base-content/60">Changing the URL will re-detect selectors automatically</span>
+        </label>
+      </div>
+
+      <div class="form-control mt-4">
+        <label class="label">
+          <span class="label-text">RSS Feed URL</span>
+        </label>
+        <div class="flex gap-2">
+          <input type="text" id="feed-url-display" class="input input-bordered flex-1 opacity-70" readonly />
+          <button id="btn-copy-url" class="btn btn-ghost btn-square" type="button" title="Copy feed URL">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-control mt-4">
+        <label class="label">
+          <span class="label-text">Item limit</span>
+        </label>
+        <input type="number" id="item-limit" class="input input-bordered" min="1" max="1000" value="100" />
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 mt-6">
+        <button id="btn-save" class="btn btn-primary flex-1">
+          <span class="loading loading-spinner loading-sm hidden"></span>
+          Save Changes
+        </button>
+        <a href="/feeds" class="btn btn-ghost flex-1">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/edit-feed.js"></script>`,
+
   create: `<div class="max-w-2xl mx-auto">
   <h1 class="text-3xl font-bold mb-2">Create New Feed</h1>
   <p class="text-base-content/70 mb-8">Enter a URL and we'll automatically detect the content.</p>
