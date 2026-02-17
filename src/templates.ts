@@ -119,6 +119,14 @@ export const pages: Record<string, string> = {
     <a href="/create" class="btn btn-primary">Create New Feed</a>
   </div>
 
+  <!-- Import Section -->
+  <div class="flex items-center gap-3 mb-4">
+    <button id="import-btn" class="btn btn-outline btn-sm">Import Feed</button>
+    <input type="file" id="import-file" accept=".json" class="hidden" />
+    <div id="import-error" class="alert alert-error py-2 px-4 text-sm hidden" role="alert"></div>
+    <div id="import-success" class="alert alert-success py-2 px-4 text-sm hidden" role="alert"></div>
+  </div>
+
   <!-- Feed Table -->
   <div class="card bg-base-200">
     <div class="card-body p-0">
