@@ -36,9 +36,8 @@ const ITEM_PATTERNS = [
 
 // Common patterns for titles within items
 const TITLE_PATTERNS = [
-  // Hacker News specific
-  '.titleline a',
-  '.titleline',
+  // Hacker News specific - must use > a to avoid getting sitebit text
+  '.titleline > a',
   '.storylink',
   // Standard heading patterns
   'h1 a',
