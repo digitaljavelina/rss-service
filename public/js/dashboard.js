@@ -212,7 +212,7 @@
    */
   async function exportFeed(slug, name) {
     try {
-      const response = await fetch('/api/feeds/' + slug);
+      const response = await fetch('/api/feeds/' + slug + '?include=items');
       if (!response.ok) {
         throw new Error('Failed to fetch feed details');
       }
@@ -224,6 +224,7 @@
         url: feed.url,
         selectors: feed.selectors || null,
         itemLimit: feed.itemLimit || null,
+        items: feed.items || [],
         exportedAt: new Date().toISOString()
       };
 
@@ -307,6 +308,10 @@
 
     if (config.selectors) {
       body.selectors = config.selectors;
+    }
+
+    if (config.items && config.items.length > 0) {
+      body.items = config.items;
     }
 
     const response = await fetch('/api/feeds', {

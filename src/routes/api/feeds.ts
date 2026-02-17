@@ -27,6 +27,12 @@ interface CreateFeedRequest {
   name: string;
   url: string;
   selectors?: Partial<FeedSelectors>; // Now optional - auto-detect if not provided
+  items?: Array<{
+    title: string;
+    link: string;
+    description?: string | null;
+    pubDate?: string | null;
+  }>;
 }
 
 interface FeedRow {
@@ -159,6 +165,42 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       }
     }
 
+    // If imported items provided, insert any that weren't already scraped (dedup by GUID)
+    if (body.items && Array.isArray(body.items) && body.items.length > 0) {
+      const { data: existingItems } = await supabase
+        .from('items')
+        .select('guid')
+        .eq('feed_id', feedId);
+
+      const existingGuids = new Set(existingItems?.map((i) => i.guid) || []);
+
+      const importedItems = body.items
+        .filter((item) => item.title && item.link)
+        .map((item) => {
+          const guid = createHash('sha256')
+            .update(`${feedId}:${item.title}:${item.link}`)
+            .digest('hex')
+            .substring(0, 16);
+          return { ...item, guid };
+        })
+        .filter((item) => !existingGuids.has(item.guid));
+
+      if (importedItems.length > 0) {
+        await supabase.from('items').insert(
+          importedItems.map((item) => ({
+            id: nanoid(),
+            feed_id: feedId,
+            title: item.title,
+            link: item.link,
+            description: item.description || null,
+            pub_date: item.pubDate || new Date().toISOString(),
+            guid: item.guid,
+          }))
+        );
+        itemCount += importedItems.length;
+      }
+    }
+
     // Return success response
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     res.status(201).json({
@@ -250,7 +292,7 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
     }
 
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-    res.status(200).json({
+    const result: Record<string, unknown> = {
       id: feedRow.id,
       slug: feedRow.slug,
       name: feedRow.name,
@@ -261,7 +303,25 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
       feedUrl: `${baseUrl}/feeds/${feedRow.slug}`,
       createdAt: feedRow.created_at,
       updatedAt: feedRow.updated_at,
-    });
+    };
+
+    // Include items if requested (for full export)
+    if (req.query.include === 'items') {
+      const { data: items } = await supabase
+        .from('items')
+        .select('title, link, description, pub_date')
+        .eq('feed_id', feedRow.id)
+        .order('pub_date', { ascending: false });
+
+      result.items = (items || []).map((item) => ({
+        title: item.title,
+        link: item.link,
+        description: item.description,
+        pubDate: item.pub_date,
+      }));
+    }
+
+    res.status(200).json(result);
   } catch (error) {
     console.error('Get feed error:', error);
     res.status(500).json({ success: false, errors: ['Internal server error'] });
