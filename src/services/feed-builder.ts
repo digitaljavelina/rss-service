@@ -65,16 +65,17 @@ export async function buildFeed(identifier: string, format: 'rss2' | 'atom1'): P
   const items = (itemRows || []) as ItemRow[];
 
   // Create Feed instance
+  const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
   const feedInstance = new Feed({
     title: feed.name,
     id: feed.id,
-    link: `${process.env.BASE_URL || 'http://localhost:3000'}/feeds/${feed.slug}`,
+    link: `${baseUrl}/feeds/${feed.slug}`,
     description: `RSS feed for ${feed.name}`,
     copyright: '',
     updated: new Date(feed.updated_at),
     feedLinks: {
-      rss: `${process.env.BASE_URL || 'http://localhost:3000'}/feeds/${feed.slug}`,
-      atom: `${process.env.BASE_URL || 'http://localhost:3000'}/feeds/${feed.slug}`,
+      rss: `${baseUrl}/feeds/${feed.slug}`,
+      atom: `${baseUrl}/feeds/${feed.slug}`,
     },
   });
 
