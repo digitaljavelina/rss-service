@@ -1,5 +1,5 @@
 // Dashboard Feed Management
-// Handles loading, refreshing, and deleting feeds on the /feeds page
+// Handles loading, refreshing, deleting, exporting, and importing feeds on the /feeds page
 
 (function() {
   'use strict';
@@ -9,6 +9,10 @@
   const deleteModal = document.getElementById('delete-modal');
   const deleteFeedName = document.getElementById('delete-feed-name');
   const confirmDeleteBtn = document.getElementById('confirm-delete');
+  const importFileInput = document.getElementById('import-file');
+  const importBtn = document.getElementById('import-btn');
+  const importError = document.getElementById('import-error');
+  const importSuccess = document.getElementById('import-success');
 
   // State
   let pendingDeleteId = null;
@@ -110,6 +114,16 @@
     refreshBtn.textContent = 'Refresh';
     actionsTd.appendChild(refreshBtn);
 
+    // Export button
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-ghost btn-xs';
+    exportBtn.setAttribute('data-action', 'export');
+    exportBtn.setAttribute('data-feed-id', feed.id);
+    exportBtn.setAttribute('data-feed-slug', feed.slug);
+    exportBtn.setAttribute('data-feed-name', feed.name);
+    exportBtn.textContent = 'Export';
+    actionsTd.appendChild(exportBtn);
+
     // Edit link
     const editLink = document.createElement('a');
     editLink.href = '/feeds/' + feed.slug + '/edit';
@@ -194,6 +208,124 @@
   }
 
   /**
+   * Export a feed configuration as a JSON file download
+   */
+  async function exportFeed(slug, name) {
+    try {
+      const response = await fetch('/api/feeds/' + slug);
+      if (!response.ok) {
+        throw new Error('Failed to fetch feed details');
+      }
+
+      const feed = await response.json();
+
+      const config = {
+        name: feed.name,
+        url: feed.url,
+        selectors: feed.selectors || null,
+        itemLimit: feed.itemLimit || null,
+        exportedAt: new Date().toISOString()
+      };
+
+      const json = JSON.stringify(config, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = slug + '-config.json';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+
+      // Clean up object URL immediately to free memory
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Failed to export feed: ' + (error.message || 'Unknown error'));
+    }
+  }
+
+  /**
+   * Validate a feed config object from import
+   */
+  function validateFeedConfig(config) {
+    if (!config || typeof config !== 'object') return false;
+    if (!config.name || typeof config.name !== 'string') return false;
+    if (!config.url || typeof config.url !== 'string') return false;
+
+    // Validate URL format
+    try {
+      new URL(config.url);
+    } catch (_) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Show an import error message
+   */
+  function showImportError(message) {
+    if (!importError) return;
+    importError.textContent = message;
+    importError.classList.remove('hidden');
+    if (importSuccess) importSuccess.classList.add('hidden');
+  }
+
+  /**
+   * Hide the import error message
+   */
+  function hideImportError() {
+    if (!importError) return;
+    importError.classList.add('hidden');
+  }
+
+  /**
+   * Show an import success message
+   */
+  function showImportSuccess(message) {
+    if (!importSuccess) return;
+    importSuccess.textContent = message;
+    importSuccess.classList.remove('hidden');
+    if (importError) importError.classList.add('hidden');
+
+    // Auto-hide after 4 seconds
+    setTimeout(function() {
+      if (importSuccess) importSuccess.classList.add('hidden');
+    }, 4000);
+  }
+
+  /**
+   * Import a feed configuration by posting to the API
+   */
+  async function importFeed(config) {
+    const body = {
+      name: config.name,
+      url: config.url
+    };
+
+    if (config.selectors) {
+      body.selectors = config.selectors;
+    }
+
+    const response = await fetch('/api/feeds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      const errorMsg = result.errors ? result.errors.join(', ') : (result.error || 'Import failed');
+      throw new Error(errorMsg);
+    }
+
+    return result;
+  }
+
+  /**
    * Load all feeds and populate the table
    */
   async function loadFeeds() {
@@ -263,17 +395,81 @@
     if (!action) return;
 
     const feedId = target.getAttribute('data-feed-id');
-    if (!feedId) return;
 
     if (action === 'refresh') {
+      if (!feedId) return;
       refreshFeed(feedId);
+    } else if (action === 'export') {
+      const feedSlug = target.getAttribute('data-feed-slug');
+      const feedName = target.getAttribute('data-feed-name') || '';
+      if (!feedSlug) return;
+      exportFeed(feedSlug, feedName);
     } else if (action === 'delete') {
+      if (!feedId) return;
       const feedName = target.getAttribute('data-feed-name') || 'this feed';
       pendingDeleteId = feedId;
       deleteFeedName.textContent = feedName;
       deleteModal.showModal();
     }
   });
+
+  // Import button - opens file picker
+  if (importBtn) {
+    importBtn.onclick = function() {
+      hideImportError();
+      if (importFileInput) importFileInput.click();
+    };
+  }
+
+  // Import file input - handles file selection and processing
+  if (importFileInput) {
+    importFileInput.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+
+      // Reset input so same file can be selected again
+      importFileInput.value = '';
+
+      if (!file) return;
+
+      hideImportError();
+
+      const reader = new FileReader();
+
+      reader.onload = async function(readerEvent) {
+        const text = readerEvent.target && readerEvent.target.result;
+
+        // Parse JSON
+        let config;
+        try {
+          config = JSON.parse(text);
+        } catch (_) {
+          showImportError('Invalid file: could not parse JSON. Please select a valid feed config file.');
+          return;
+        }
+
+        // Validate config structure
+        if (!validateFeedConfig(config)) {
+          showImportError('Invalid config: file must contain a valid "name" and "url" field with a valid URL.');
+          return;
+        }
+
+        // Import the feed
+        try {
+          await importFeed(config);
+          showImportSuccess('Feed "' + config.name + '" imported successfully!');
+          await loadFeeds();
+        } catch (error) {
+          showImportError('Import failed: ' + (error.message || 'Unknown error'));
+        }
+      };
+
+      reader.onerror = function() {
+        showImportError('Failed to read file. Please try again.');
+      };
+
+      reader.readAsText(file);
+    });
+  }
 
   // Delete confirmation handler
   confirmDeleteBtn.onclick = async function() {
