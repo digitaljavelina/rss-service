@@ -110,8 +110,9 @@ export const pages: Record<string, string> = {
   </div>
 </div>`,
 
-  create: `<div class="max-w-4xl mx-auto">
-  <h1 class="text-3xl font-bold mb-8">Create New Feed</h1>
+  create: `<div class="max-w-2xl mx-auto">
+  <h1 class="text-3xl font-bold mb-2">Create New Feed</h1>
+  <p class="text-base-content/70 mb-8">Enter a URL and we'll automatically detect the content.</p>
 
   <!-- Error display -->
   <div id="preview-errors" class="alert alert-warning mb-6 hidden">
@@ -127,95 +128,49 @@ export const pages: Record<string, string> = {
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
     <div>
-      <h3 class="font-bold">Feed Created Successfully!</h3>
+      <h3 class="font-bold">Feed Created!</h3>
       <div class="text-sm">Your feed is ready. <a id="feed-url-link" href="#" target="_blank" class="link link-primary">Open RSS Feed</a></div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Feed Details Card -->
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">Feed Details</h2>
+  <!-- Simple Form Card -->
+  <div class="card bg-base-200">
+    <div class="card-body">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">URL to create feed from</span>
+        </label>
+        <input type="url" id="source-url" placeholder="https://news.ycombinator.com" class="input input-bordered" required autofocus />
+      </div>
 
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Feed Name</span>
-          </label>
-          <input type="text" id="feed-name" placeholder="My News Feed" class="input input-bordered" required />
-        </div>
+      <div class="form-control mt-4">
+        <label class="label">
+          <span class="label-text">Feed name</span>
+        </label>
+        <input type="text" id="feed-name" placeholder="Hacker News" class="input input-bordered" required />
+      </div>
 
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Source URL</span>
-          </label>
-          <input type="url" id="source-url" placeholder="https://example.com/news" class="input input-bordered" required />
-        </div>
+      <!-- Action Buttons -->
+      <div class="flex gap-4 mt-6">
+        <button id="btn-preview" class="btn btn-outline flex-1">
+          <span class="loading loading-spinner loading-sm hidden"></span>
+          Preview
+        </button>
+        <button id="btn-save" class="btn btn-primary flex-1" disabled>
+          <span class="loading loading-spinner loading-sm hidden"></span>
+          Create Feed
+        </button>
       </div>
     </div>
-
-    <!-- CSS Selectors Card -->
-    <div class="card bg-base-200">
-      <div class="card-body">
-        <h2 class="card-title">CSS Selectors</h2>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Item Container</span>
-          </label>
-          <input type="text" id="selector-item" placeholder=".article, .post" class="input input-bordered font-mono" required />
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Title Selector</span>
-          </label>
-          <input type="text" id="selector-title" placeholder="h2, .title" class="input input-bordered font-mono" required />
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Link Selector (optional)</span>
-          </label>
-          <input type="text" id="selector-link" placeholder="a" class="input input-bordered font-mono" />
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Description Selector (optional)</span>
-          </label>
-          <input type="text" id="selector-description" placeholder=".summary, p" class="input input-bordered font-mono" />
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Date Selector (optional)</span>
-          </label>
-          <input type="text" id="selector-date" placeholder=".date, time" class="input input-bordered font-mono" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Action Buttons -->
-  <div class="flex gap-4 mt-6">
-    <button id="btn-preview" class="btn btn-outline">
-      <span class="loading loading-spinner loading-sm hidden"></span>
-      Preview
-    </button>
-    <button id="btn-save" class="btn btn-primary" disabled>
-      <span class="loading loading-spinner loading-sm hidden"></span>
-      Save Feed
-    </button>
   </div>
 
   <!-- Preview Section -->
   <div id="preview-section" class="mt-8 hidden">
-    <div class="divider">Preview Results</div>
+    <div class="divider">Preview</div>
 
     <div id="preview-meta" class="text-sm text-base-content/70 mb-4"></div>
 
-    <div id="preview-items" class="space-y-4"></div>
+    <div id="preview-items" class="space-y-3"></div>
   </div>
 </div>
 <script src="/js/create-feed.js"></script>`

@@ -1,5 +1,5 @@
 // Create Feed Form Handler
-// Vanilla JavaScript - no dependencies
+// Simplified - just URL and name, auto-detection handles the rest
 
 (function() {
   'use strict';
@@ -7,11 +7,6 @@
   // DOM element references
   const feedName = document.getElementById('feed-name');
   const sourceUrl = document.getElementById('source-url');
-  const selectorItem = document.getElementById('selector-item');
-  const selectorTitle = document.getElementById('selector-title');
-  const selectorLink = document.getElementById('selector-link');
-  const selectorDescription = document.getElementById('selector-description');
-  const selectorDate = document.getElementById('selector-date');
   const btnPreview = document.getElementById('btn-preview');
   const btnSave = document.getElementById('btn-save');
   const previewSection = document.getElementById('preview-section');
@@ -40,65 +35,27 @@
   }
 
   /**
-   * Get form data as object
-   */
-  function getFormData() {
-    return {
-      name: feedName.value.trim(),
-      url: sourceUrl.value.trim(),
-      selectors: {
-        item: selectorItem.value.trim(),
-        title: selectorTitle.value.trim(),
-        link: selectorLink.value.trim() || undefined,
-        description: selectorDescription.value.trim() || undefined,
-        date: selectorDate.value.trim() || undefined
-      }
-    };
-  }
-
-  /**
    * Validate form and return array of error strings
    */
   function validateForm() {
     const errors = [];
-    const data = getFormData();
+    const url = sourceUrl.value.trim();
 
-    if (!data.name) {
-      errors.push('Feed name is required');
-    }
-
-    if (!data.url) {
-      errors.push('Source URL is required');
+    if (!url) {
+      errors.push('URL is required');
     } else {
       try {
-        new URL(data.url);
+        new URL(url);
       } catch (e) {
-        errors.push('Invalid URL format');
+        errors.push('Please enter a valid URL');
       }
-    }
-
-    if (!data.selectors.item) {
-      errors.push('Item container selector is required');
-    }
-
-    if (!data.selectors.title) {
-      errors.push('Title selector is required');
     }
 
     return errors;
   }
 
   /**
-   * Escape HTML to prevent XSS - creates safe text node
-   */
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.textContent;
-  }
-
-  /**
-   * Clear all child elements from a container (safe alternative to innerHTML = '')
+   * Clear all child elements from a container
    */
   function clearChildren(element) {
     while (element.firstChild) {
@@ -126,23 +83,23 @@
     if (!data.items || data.items.length === 0) {
       const noItems = document.createElement('div');
       noItems.className = 'alert alert-warning';
-      noItems.textContent = 'No items found with the specified selectors. Try adjusting your CSS selectors.';
+      noItems.textContent = 'No content detected on this page. Try a different URL.';
       previewItems.appendChild(noItems);
       return;
     }
 
-    // Render items (limit to 10)
-    const itemsToShow = data.items.slice(0, 10);
-    itemsToShow.forEach(function(item, index) {
+    // Render items (limit to 5 for preview)
+    const itemsToShow = data.items.slice(0, 5);
+    itemsToShow.forEach(function(item) {
       const card = document.createElement('div');
-      card.className = 'card bg-base-200';
+      card.className = 'card bg-base-100 shadow-sm';
 
       const cardBody = document.createElement('div');
-      cardBody.className = 'card-body py-3';
+      cardBody.className = 'card-body py-3 px-4';
 
-      // Title - use textContent for safety
+      // Title
       const title = document.createElement('h3');
-      title.className = 'card-title text-base';
+      title.className = 'font-medium';
       title.textContent = item.title || '(No title)';
       cardBody.appendChild(title);
 
@@ -152,25 +109,9 @@
         link.href = item.link;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.className = 'text-sm link link-primary truncate block';
+        link.className = 'text-xs link link-primary truncate block opacity-60';
         link.textContent = item.link;
         cardBody.appendChild(link);
-      }
-
-      // Description - use textContent for safety
-      if (item.description) {
-        const desc = document.createElement('p');
-        desc.className = 'text-sm text-base-content/70 line-clamp-2';
-        desc.textContent = item.description;
-        cardBody.appendChild(desc);
-      }
-
-      // Date - use textContent for safety
-      if (item.date) {
-        const date = document.createElement('span');
-        date.className = 'text-xs text-base-content/50';
-        date.textContent = item.date;
-        cardBody.appendChild(date);
       }
 
       card.appendChild(cardBody);
@@ -178,11 +119,16 @@
     });
 
     // Show "and N more" if applicable
-    if (data.items.length > 10) {
+    if (data.items.length > 5) {
       const more = document.createElement('div');
       more.className = 'text-center text-sm text-base-content/60 py-2';
-      more.textContent = '... and ' + (data.items.length - 10) + ' more items';
+      more.textContent = '+ ' + (data.items.length - 5) + ' more items';
       previewItems.appendChild(more);
+    }
+
+    // Auto-fill feed name from page title if empty
+    if (!feedName.value.trim() && data.metadata && data.metadata.pageTitle) {
+      feedName.value = data.metadata.pageTitle;
     }
   }
 
@@ -208,11 +154,6 @@
   function disableForm() {
     feedName.disabled = true;
     sourceUrl.disabled = true;
-    selectorItem.disabled = true;
-    selectorTitle.disabled = true;
-    selectorLink.disabled = true;
-    selectorDescription.disabled = true;
-    selectorDate.disabled = true;
     btnPreview.disabled = true;
     btnSave.disabled = true;
   }
@@ -228,7 +169,7 @@
       return;
     }
 
-    const data = getFormData();
+    const url = sourceUrl.value.trim();
     setLoading(btnPreview, true);
 
     try {
@@ -237,16 +178,13 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          url: data.url,
-          selectors: data.selectors
-        })
+        body: JSON.stringify({ url })
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Preview failed');
+        throw new Error(result.errors ? result.errors.join('. ') : 'Preview failed');
       }
 
       // Store for save
@@ -260,7 +198,7 @@
         btnSave.disabled = false;
       }
     } catch (error) {
-      showPreviewError(error.message || 'Failed to preview. Please try again.');
+      showPreviewError(error.message || 'Failed to preview. Please check the URL and try again.');
       lastPreviewData = null;
       btnSave.disabled = true;
     } finally {
@@ -272,20 +210,15 @@
   btnSave.onclick = async function() {
     hideErrors();
 
-    // Validate form
-    const errors = validateForm();
-    if (errors.length > 0) {
-      showPreviewError(errors.join('. '));
-      return;
-    }
-
     // Require preview first
     if (!lastPreviewData || !lastPreviewData.items || lastPreviewData.items.length === 0) {
-      showPreviewError('Please preview the feed first to ensure selectors work correctly.');
+      showPreviewError('Please preview the URL first.');
       return;
     }
 
-    const data = getFormData();
+    const url = sourceUrl.value.trim();
+    const name = feedName.value.trim() || lastPreviewData.metadata?.pageTitle || 'Untitled Feed';
+
     setLoading(btnSave, true);
 
     try {
@@ -294,26 +227,21 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          name: data.name,
-          url: data.url,
-          selectors: data.selectors
-        })
+        body: JSON.stringify({ name, url })
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create feed');
+        throw new Error(result.errors ? result.errors.join('. ') : 'Failed to create feed');
       }
 
       // Show success
       successSection.classList.remove('hidden');
 
       // Set feed URL link
-      const feedUrl = window.location.origin + '/feed/' + result.slug + '.xml';
-      feedUrlLink.href = feedUrl;
-      feedUrlLink.textContent = feedUrl;
+      feedUrlLink.href = result.feedUrl;
+      feedUrlLink.textContent = result.feedUrl;
 
       // Disable form
       disableForm();
@@ -322,10 +250,18 @@
       previewSection.classList.add('hidden');
 
     } catch (error) {
-      showPreviewError(error.message || 'Failed to save feed. Please try again.');
+      showPreviewError(error.message || 'Failed to create feed. Please try again.');
     } finally {
       setLoading(btnSave, false);
     }
   };
+
+  // Allow Enter key to trigger preview
+  sourceUrl.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnPreview.click();
+    }
+  });
 
 })();

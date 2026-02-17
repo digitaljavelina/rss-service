@@ -1,24 +1,25 @@
 /**
  * Preview API endpoint
- * POST /api/preview - Extract content from URL using selectors
+ * POST /api/preview - Extract content from URL with auto-detection
  */
 
 import { Router, Request, Response } from 'express';
 import * as cheerio from 'cheerio';
 import { fetchPage } from '../../services/page-fetcher.js';
-import { extractItems } from '../../services/content-extractor.js';
+import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
-import type { FeedSelectors, ExtractedItem } from '../../types/feed.js';
+import type { ExtractedItem } from '../../types/feed.js';
 
 // Create preview router
 export const previewRouter = Router();
 
 interface PreviewRequest {
   url: string;
-  selectors: {
-    item: string;
-    title: string;
-    link: string;
+  // Selectors are now optional - auto-detect if not provided
+  selectors?: {
+    item?: string;
+    title?: string;
+    link?: string;
     description?: string;
     date?: string;
   };
@@ -36,17 +37,25 @@ interface PreviewResponse {
     pageTitle: string;
     itemCount: number;
     fetchedAt: string;
+    autoDetected: boolean;
+  };
+  selectors?: {
+    item: string;
+    title: string;
+    link?: string;
+    description?: string;
+    date?: string;
   };
   errors?: string[];
 }
 
-// POST / - Preview extraction
+// POST / - Preview extraction with auto-detection
 previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const body = req.body as PreviewRequest;
     const errors: string[] = [];
 
-    // Validate request body
+    // Validate request body - only URL is required now
     if (!body.url) {
       errors.push('url is required');
     } else {
@@ -55,17 +64,6 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
         new URL(body.url);
       } catch {
         errors.push('url must be a valid URL');
-      }
-    }
-
-    if (!body.selectors) {
-      errors.push('selectors is required');
-    } else {
-      if (!body.selectors.item) {
-        errors.push('selectors.item is required');
-      }
-      if (!body.selectors.title) {
-        errors.push('selectors.title is required');
       }
     }
 
@@ -84,19 +82,26 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Extract items
-    const selectors: FeedSelectors = {
-      item: body.selectors.item,
-      title: body.selectors.title,
-      link: body.selectors.link,
-      description: body.selectors.description,
-      date: body.selectors.date,
-    };
+    // Extract items with auto-detection
+    const extraction = autoExtractItems(result.html, body.url, body.selectors);
 
-    const items = extractItems(result.html, body.url, selectors);
+    if (!extraction || extraction.items.length === 0) {
+      res.status(200).json({
+        success: true,
+        items: [],
+        metadata: {
+          pageTitle: cheerio.load(result.html)('title').text().trim() || 'Untitled',
+          itemCount: 0,
+          fetchedAt: new Date().toISOString(),
+          autoDetected: !body.selectors?.item,
+        },
+        errors: ['Could not detect any content items on this page. The page may not have a recognizable article list.'],
+      } as PreviewResponse);
+      return;
+    }
 
     // Parse dates for each item
-    const itemsWithDates: ExtractedItem[] = items.map((item) => ({
+    const itemsWithDates: ExtractedItem[] = extraction.items.map((item) => ({
       ...item,
       pubDate: item.dateText ? parseDate(item.dateText) : undefined,
     }));
@@ -105,7 +110,7 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     const $ = cheerio.load(result.html);
     const pageTitle = $('title').text().trim() || 'Untitled';
 
-    // Return success response
+    // Return success response with detected selectors
     res.status(200).json({
       success: true,
       items: itemsWithDates.map((i) => ({
@@ -118,7 +123,9 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
         pageTitle,
         itemCount: itemsWithDates.length,
         fetchedAt: new Date().toISOString(),
+        autoDetected: !body.selectors?.item,
       },
+      selectors: extraction.selectors,
     } as PreviewResponse);
   } catch (error) {
     console.error('Preview extraction error:', error);

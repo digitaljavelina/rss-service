@@ -14,7 +14,7 @@ const slugify = slugifyModule.default || slugifyModule;
 import { createHash } from 'crypto';
 import { supabase } from '../../db/index.js';
 import { fetchPage } from '../../services/page-fetcher.js';
-import { extractItems } from '../../services/content-extractor.js';
+import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
 import { invalidateFeed } from '../../services/feed-cache.js';
 import { buildFeed } from '../../services/feed-builder.js';
@@ -26,7 +26,7 @@ export const feedsApiRouter = Router();
 interface CreateFeedRequest {
   name: string;
   url: string;
-  selectors: FeedSelectors;
+  selectors?: Partial<FeedSelectors>; // Now optional - auto-detect if not provided
 }
 
 interface FeedRow {
@@ -50,32 +50,49 @@ function generateGuid(feedId: string, item: ExtractedItem): string {
     .substring(0, 16);
 }
 
-// POST / - Create new feed
+// POST / - Create new feed with auto-detection
 feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const body = req.body as CreateFeedRequest;
     const errors: string[] = [];
 
-    // Validate required fields
+    // Validate required fields - only name and url now
     if (!body.name) {
       errors.push('name is required');
     }
     if (!body.url) {
       errors.push('url is required');
-    }
-    if (!body.selectors) {
-      errors.push('selectors is required');
     } else {
-      if (!body.selectors.item) {
-        errors.push('selectors.item is required');
-      }
-      if (!body.selectors.title) {
-        errors.push('selectors.title is required');
+      try {
+        new URL(body.url);
+      } catch {
+        errors.push('url must be a valid URL');
       }
     }
 
     if (errors.length > 0) {
       res.status(400).json({ success: false, errors });
+      return;
+    }
+
+    // Fetch page first to auto-detect selectors if needed
+    const fetchResult = await fetchPage(body.url);
+    if (!fetchResult.ok || !fetchResult.html) {
+      res.status(400).json({
+        success: false,
+        errors: [`Failed to fetch URL: ${fetchResult.error || 'Unknown error'}`],
+      });
+      return;
+    }
+
+    // Extract items with auto-detection
+    const extraction = autoExtractItems(fetchResult.html, body.url, body.selectors);
+
+    if (!extraction || extraction.items.length === 0) {
+      res.status(400).json({
+        success: false,
+        errors: ['Could not detect any content items on this page. The page may not have a recognizable article list.'],
+      });
       return;
     }
 
@@ -97,13 +114,13 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       slug = `${slug}-${nanoid(6)}`;
     }
 
-    // Insert feed into database
+    // Insert feed into database with detected selectors
     const { error: insertError } = await supabase.from('feeds').insert({
       id: feedId,
       slug: slug,
       name: body.name,
       url: body.url,
-      selectors: JSON.stringify(body.selectors),
+      selectors: JSON.stringify(extraction.selectors),
       item_limit: 100,
     });
 
@@ -113,39 +130,32 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Fetch page and extract items
-    const fetchResult = await fetchPage(body.url);
+    // Parse dates and prepare items for insertion
+    const itemsWithDates: ExtractedItem[] = extraction.items.map((item) => ({
+      ...item,
+      pubDate: item.dateText ? parseDate(item.dateText) : undefined,
+    }));
+
     let itemCount = 0;
+    if (itemsWithDates.length > 0) {
+      // Insert items into database
+      const { error: itemsError } = await supabase.from('items').insert(
+        itemsWithDates.map((item) => ({
+          id: nanoid(),
+          feed_id: feedId,
+          title: item.title,
+          link: item.link,
+          description: item.description || null,
+          pub_date: item.pubDate?.toISOString() || new Date().toISOString(),
+          guid: generateGuid(feedId, item),
+        }))
+      );
 
-    if (fetchResult.ok && fetchResult.html) {
-      const items = extractItems(fetchResult.html, body.url, body.selectors);
-
-      // Parse dates and prepare items for insertion
-      const itemsWithDates: ExtractedItem[] = items.map((item) => ({
-        ...item,
-        pubDate: item.dateText ? parseDate(item.dateText) : undefined,
-      }));
-
-      if (itemsWithDates.length > 0) {
-        // Insert items into database
-        const { error: itemsError } = await supabase.from('items').insert(
-          itemsWithDates.map((item) => ({
-            id: nanoid(),
-            feed_id: feedId,
-            title: item.title,
-            link: item.link,
-            description: item.description || null,
-            pub_date: item.pubDate?.toISOString() || new Date().toISOString(),
-            guid: generateGuid(feedId, item),
-          }))
-        );
-
-        if (itemsError) {
-          console.error('Error inserting items:', itemsError);
-          // Feed created but items failed - continue and report
-        } else {
-          itemCount = itemsWithDates.length;
-        }
+      if (itemsError) {
+        console.error('Error inserting items:', itemsError);
+        // Feed created but items failed - continue and report
+      } else {
+        itemCount = itemsWithDates.length;
       }
     }
 
@@ -277,13 +287,12 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
 
     const feedRow = feed as FeedRow;
 
-    // Parse selectors from JSON
-    let selectors: FeedSelectors;
+    // Parse selectors from JSON (may be empty for auto-detect)
+    let selectors: Partial<FeedSelectors> | undefined;
     try {
       selectors = JSON.parse(feedRow.selectors);
     } catch {
-      res.status(400).json({ error: 'Invalid feed selectors' });
-      return;
+      // No selectors stored, will auto-detect
     }
 
     // Fetch page
@@ -295,8 +304,14 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
       return;
     }
 
-    // Extract items
-    const extractedItems = extractItems(fetchResult.html, feedRow.url || '', selectors);
+    // Extract items with auto-detection
+    const extraction = autoExtractItems(fetchResult.html, feedRow.url || '', selectors);
+    if (!extraction) {
+      res.status(400).json({ error: 'Could not extract content from page' });
+      return;
+    }
+
+    const extractedItems = extraction.items;
 
     // Get existing GUIDs to avoid duplicates
     const { data: existingItems } = await supabase
