@@ -1,21 +1,13 @@
 import { Router } from 'express';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { layout, sidebar, pages } from '../templates.js';
 
 // Create UI router
 export const uiRouter = Router();
 
 // Helper function to serve HTML pages
 function servePage(pageName: string): string {
-  // Use process.cwd() for Vercel compatibility
-  const viewsDir = join(process.cwd(), 'src', 'views');
+  const content = pages[pageName] || '<h1>Page not found</h1>';
 
-  // Read layout, sidebar, and page content
-  const layout = readFileSync(join(viewsDir, 'layouts', 'main.html'), 'utf-8');
-  const sidebar = readFileSync(join(viewsDir, 'partials', 'sidebar.html'), 'utf-8');
-  const content = readFileSync(join(viewsDir, 'pages', `${pageName}.html`), 'utf-8');
-
-  // Replace placeholders
   return layout
     .replace('{{sidebar}}', sidebar)
     .replace('{{content}}', content);
