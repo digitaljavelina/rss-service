@@ -1,6 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req, res) {
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -14,7 +12,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   <h1>RSS Service</h1>
   <p>If you see this, the serverless function is working!</p>
   <p>Request path: ${req.url}</p>
-  <p>Env vars set: SUPABASE_URL=${process.env.SUPABASE_URL ? 'yes' : 'no'}, SUPABASE_ANON_KEY=${process.env.SUPABASE_ANON_KEY ? 'yes' : 'no'}</p>
 </body>
 </html>`;
 
