@@ -104,7 +104,8 @@
 
     // Actions cell
     const actionsTd = document.createElement('td');
-    actionsTd.className = 'flex gap-2 items-center';
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'flex gap-2 items-center';
 
     // Refresh button
     const refreshBtn = document.createElement('button');
@@ -112,7 +113,7 @@
     refreshBtn.setAttribute('data-action', 'refresh');
     refreshBtn.setAttribute('data-feed-id', feed.id);
     refreshBtn.textContent = 'Refresh';
-    actionsTd.appendChild(refreshBtn);
+    actionsWrapper.appendChild(refreshBtn);
 
     // Export button
     const exportBtn = document.createElement('button');
@@ -122,14 +123,14 @@
     exportBtn.setAttribute('data-feed-slug', feed.slug);
     exportBtn.setAttribute('data-feed-name', feed.name);
     exportBtn.textContent = 'Export';
-    actionsTd.appendChild(exportBtn);
+    actionsWrapper.appendChild(exportBtn);
 
     // Edit link
     const editLink = document.createElement('a');
     editLink.href = '/feeds/' + feed.slug + '/edit';
     editLink.className = 'btn btn-ghost btn-xs';
     editLink.textContent = 'Edit';
-    actionsTd.appendChild(editLink);
+    actionsWrapper.appendChild(editLink);
 
     // Delete button
     const deleteBtn = document.createElement('button');
@@ -138,8 +139,9 @@
     deleteBtn.setAttribute('data-feed-id', feed.id);
     deleteBtn.setAttribute('data-feed-name', feed.name);
     deleteBtn.textContent = 'Delete';
-    actionsTd.appendChild(deleteBtn);
+    actionsWrapper.appendChild(deleteBtn);
 
+    actionsTd.appendChild(actionsWrapper);
     tr.appendChild(actionsTd);
     return tr;
   }
