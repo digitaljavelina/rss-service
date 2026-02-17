@@ -8,13 +8,13 @@
 
 ### Core Feed Generation
 
-- [ ] **CORE-01**: User can create a feed by entering a URL
-- [ ] **CORE-02**: User can specify CSS selectors to extract feed items (title, link, description, date)
-- [ ] **CORE-03**: User can preview extracted content before saving feed
-- [ ] **CORE-04**: System generates valid RSS 2.0 XML from extracted content
-- [ ] **CORE-05**: System generates valid Atom feed format as alternative
+- [x] **CORE-01**: User can create a feed by entering a URL
+- [x] **CORE-02**: User can specify CSS selectors to extract feed items (title, link, description, date) — *Superseded by auto-detection (CORE-07)*
+- [x] **CORE-03**: User can preview extracted content before saving feed
+- [x] **CORE-04**: System generates valid RSS 2.0 XML from extracted content
+- [x] **CORE-05**: System generates valid Atom feed format as alternative
 - [ ] **CORE-06**: User can visually select page elements to generate CSS selectors (click-to-select)
-- [ ] **CORE-07**: System auto-detects common content patterns (article lists, titles, dates)
+- [x] **CORE-07**: System auto-detects common content patterns (article lists, titles, dates) — *Moved from Phase 4 to Phase 2*
 - [ ] **CORE-08**: System renders JavaScript-heavy pages via headless browser when needed
 
 ### Feed Management
@@ -22,7 +22,7 @@
 - [ ] **MGMT-01**: User can view all created feeds in a dashboard
 - [ ] **MGMT-02**: User can edit feed configuration (selectors, title, refresh interval)
 - [ ] **MGMT-03**: User can delete feeds
-- [ ] **MGMT-04**: User can manually trigger a feed refresh
+- [x] **MGMT-04**: User can manually trigger a feed refresh
 - [ ] **MGMT-05**: System deduplicates content to prevent duplicate feed items
 - [ ] **MGMT-06**: User can export feed configurations for backup
 - [ ] **MGMT-07**: User can import feed configurations from backup
@@ -44,23 +44,23 @@
 
 ### Output & Serving
 
-- [ ] **OUT-01**: System serves RSS feeds at localhost URLs (e.g., localhost:3000/feeds/123)
-- [ ] **OUT-02**: System sets proper Content-Type headers (application/rss+xml)
-- [ ] **OUT-03**: User can export a feed as static XML file
-- [ ] **OUT-04**: System caches feed content for fast serving
+- [x] **OUT-01**: System serves RSS feeds at localhost URLs (e.g., localhost:3000/feeds/123)
+- [x] **OUT-02**: System sets proper Content-Type headers (application/rss+xml)
+- [x] **OUT-03**: User can export a feed as static XML file
+- [x] **OUT-04**: System caches feed content for fast serving
 
 ### User Interface
 
-- [ ] **UI-01**: Web UI is clean, uncluttered, and easy to navigate
+- [x] **UI-01**: Web UI is clean, uncluttered, and easy to navigate
 - [ ] **UI-02**: Dashboard shows feed status (last updated, item count, errors)
 - [ ] **UI-03**: Error states are clearly communicated to user
-- [ ] **UI-04**: UI works in modern browsers (Chrome, Firefox, Safari)
+- [x] **UI-04**: UI works in modern browsers (Chrome, Firefox, Safari)
 
 ### Data & Storage
 
-- [ ] **DATA-01**: System stores feeds and items in SQLite database
-- [ ] **DATA-02**: System persists data across app restarts
-- [ ] **DATA-03**: System limits stored items per feed (configurable, default 100)
+- [x] **DATA-01**: System stores feeds and items in SQLite database — *Using Supabase (PostgreSQL) for serverless*
+- [x] **DATA-02**: System persists data across app restarts
+- [x] **DATA-03**: System limits stored items per feed (configurable, default 100)
 
 ---
 
@@ -90,18 +90,18 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 2 | Pending |
-| CORE-02 | Phase 2 | Pending |
-| CORE-03 | Phase 2 | Pending |
-| CORE-04 | Phase 2 | Pending |
-| CORE-05 | Phase 2 | Pending |
+| CORE-01 | Phase 2 | Complete |
+| CORE-02 | Phase 2 | Superseded by CORE-07 |
+| CORE-03 | Phase 2 | Complete |
+| CORE-04 | Phase 2 | Complete |
+| CORE-05 | Phase 2 | Complete |
 | CORE-06 | Phase 4 | Pending |
-| CORE-07 | Phase 4 | Pending |
+| CORE-07 | Phase 2 | Complete (moved from Phase 4) |
 | CORE-08 | Phase 4 | Pending |
 | MGMT-01 | Phase 3 | Pending |
 | MGMT-02 | Phase 3 | Pending |
 | MGMT-03 | Phase 3 | Pending |
-| MGMT-04 | Phase 2 | Pending |
+| MGMT-04 | Phase 2 | Complete |
 | MGMT-05 | Phase 3 | Pending |
 | MGMT-06 | Phase 3 | Pending |
 | MGMT-07 | Phase 3 | Pending |
@@ -114,17 +114,17 @@
 | PLAT-03 | Phase 6 | Pending |
 | PLAT-04 | Phase 6 | Pending |
 | PLAT-05 | Phase 6 | Pending |
-| OUT-01 | Phase 1 | Pending |
-| OUT-02 | Phase 1 | Pending |
-| OUT-03 | Phase 2 | Pending |
-| OUT-04 | Phase 1 | Pending |
-| UI-01 | Phase 1 | Pending |
+| OUT-01 | Phase 1 | Complete |
+| OUT-02 | Phase 1 | Complete |
+| OUT-03 | Phase 2 | Complete |
+| OUT-04 | Phase 1 | Complete |
+| UI-01 | Phase 1 | Complete |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 1 | Pending |
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
+| UI-04 | Phase 1 | Complete |
+| DATA-01 | Phase 1 | Complete (Supabase) |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
 
 ---
-*Last updated: 2026-02-16*
+*Last updated: 2026-02-17*
