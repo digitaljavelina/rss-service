@@ -11,13 +11,13 @@
 ## Current Position
 
 **Phase:** 2 of 6 (Core Feed Creation)
-**Plan:** 1 of 5 in phase
+**Plan:** 2 of 5 in phase
 **Status:** In progress
-**Last activity:** 2026-02-17 - Completed 02-01-PLAN.md (Extraction Services)
+**Last activity:** 2026-02-17 - Completed 02-02-PLAN.md (Preview & Feed API)
 
-**Progress:** ██░░░░░░░░ 14% (5/35 plans)
+**Progress:** ███░░░░░░░ 17% (6/35 plans)
 Phase 1: ██████████ 100% (4/4 plans)
-Phase 2: ██░░░░░░░░ 20% (1/5 plans)
+Phase 2: ████░░░░░░ 40% (2/5 plans)
 
 ---
 
@@ -26,13 +26,13 @@ Phase 2: ██░░░░░░░░ 20% (1/5 plans)
 | Phase | Name | Status | Requirements | Plans | Completed |
 |-------|------|--------|--------------|-------|-----------|
 | 1 | Foundation & Setup | Complete ✅ | 8 | 4/4 | 100% |
-| 2 | Core Feed Creation | In Progress | 7 | 1/5 | 20% |
+| 2 | Core Feed Creation | In Progress | 7 | 2/5 | 40% |
 | 3 | Feed Management | Not Started | 8 | 0/0 | 0% |
 | 4 | Advanced Extraction | Not Started | 3 | 0/0 | 0% |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 | 0% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 5/35 plans completed (14%)
+**Overall Progress:** 6/35 plans completed (17%)
 
 ---
 
@@ -43,11 +43,12 @@ Phase 2: ██░░░░░░░░ 20% (1/5 plans)
 **Rework Rate:** 0%
 
 **Quality Indicators:**
-- Plans completed: 5
+- Plans completed: 6
 - Phase 1 verified by user
 - Deployed to Vercel production
 - Supabase database operational
 - Extraction services layer complete
+- Preview and Feed CRUD APIs operational
 
 ---
 
@@ -79,6 +80,9 @@ Phase 2: ██░░░░░░░░ 20% (1/5 plans)
 | Vercel for hosting | Free tier, GitHub integration, serverless functions | 2026-02-17 |
 | Lazy Supabase init | Prevents module-load crashes in serverless environment | 2026-02-17 |
 | chrono-node has built-in types | No @types package needed, library includes TypeScript definitions | 2026-02-17 |
+| Content-based GUIDs | SHA-256 hash of feedId:title:link ensures deduplication across extractions | 2026-02-17 |
+| Slug collision handling | Check existence before insert, append nanoid(6) suffix if duplicate | 2026-02-17 |
+| Extract items on feed create | Items stored immediately on feed creation rather than delayed | 2026-02-17 |
 
 ### Open Questions
 
@@ -102,8 +106,8 @@ Phase 2: ██░░░░░░░░ 20% (1/5 plans)
 
 ## Session Continuity
 
-**Last Session:** 2026-02-17T05:05:40Z
-**Stopped at:** Completed 02-01-PLAN.md (Extraction Services)
+**Last Session:** 2026-02-17T05:13:00Z
+**Stopped at:** Completed 02-02-PLAN.md (Preview & Feed API)
 **Resume file:** None
 
 **Context for Next Session:**
@@ -111,12 +115,14 @@ Phase 2: ██░░░░░░░░ 20% (1/5 plans)
 - Production URL: https://rss-service-five.vercel.app/
 - Supabase database with feeds/items tables
 - Extraction services: fetchPage(), extractItems(), parseDate()
-- TypeScript types: FeedSelectors, FeedConfig, ExtractedItem, FetchResult
-- Ready for 02-02: Preview API
+- Preview API: POST /api/preview for extraction preview
+- Feed CRUD API: POST/GET /api/feeds, GET /api/feeds/:id
+- End-to-end flow verified: create feed -> items stored -> XML serves items
+- Ready for 02-03: Feed creation form UI
 
 **Next Steps:**
-1. Execute 02-02-PLAN.md (Preview API endpoint)
-2. Execute 02-03-PLAN.md (Feed creation form UI)
+1. Execute 02-03-PLAN.md (Feed creation form UI)
+2. Execute 02-04-PLAN.md (Feed management)
 3. Continue Phase 2 plans
 
 ---
@@ -131,4 +137,4 @@ Phase 2: ██░░░░░░░░ 20% (1/5 plans)
 
 ---
 
-*Last updated: 2026-02-17T05:05:40Z*
+*Last updated: 2026-02-17T05:13:00Z*
