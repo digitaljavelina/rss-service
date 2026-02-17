@@ -20,10 +20,10 @@ This roadmap delivers a self-hosted RSS feed generator by progressing from found
 **Plans:** 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project setup with TypeScript and SQLite database layer
-- [ ] 01-02-PLAN.md — Express server with feed serving and content negotiation
-- [ ] 01-03-PLAN.md — Web UI shell with sidebar and theme toggle
-- [ ] 01-04-PLAN.md — Human verification of complete foundation
+- [x] 01-01-PLAN.md — Project setup with TypeScript and SQLite database layer
+- [x] 01-02-PLAN.md — Express server with feed serving and content negotiation
+- [x] 01-03-PLAN.md — Web UI shell with sidebar and theme toggle
+- [x] 01-04-PLAN.md — Human verification of complete foundation
 
 **Requirements:**
 - DATA-01: System stores feeds and items in SQLite database
@@ -43,11 +43,22 @@ Plans:
 
 **Dependencies:** None
 
+**Status:** Complete
+
 ---
 
 ### Phase 2: Core Feed Creation
 
 **Goal:** User can create and serve valid RSS feeds from any website using CSS selectors.
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Install dependencies and create extraction services
+- [ ] 02-02-PLAN.md — Preview API and feed CRUD endpoints
+- [ ] 02-03-PLAN.md — Create Feed UI page with form
+- [ ] 02-04-PLAN.md — Refresh and export functionality
+- [ ] 02-05-PLAN.md — Human verification of feed creation workflow
 
 **Requirements:**
 - CORE-01: User can create a feed by entering a URL
@@ -65,6 +76,8 @@ Plans:
 4. User can download feed as static XML file from the UI
 
 **Dependencies:** Phase 1
+
+**Status:** Planned
 
 ---
 
@@ -200,8 +213,8 @@ Plans:
 
 | Phase | Name | Status | Requirements | Plans |
 |-------|------|--------|--------------|-------|
-| 1 | Foundation & Setup | Planned | 8 | 0/4 |
-| 2 | Core Feed Creation | Not Started | 7 | 0/0 |
+| 1 | Foundation & Setup | Complete | 8 | 4/4 |
+| 2 | Core Feed Creation | Planned | 7 | 0/5 |
 | 3 | Feed Management | Not Started | 8 | 0/0 |
 | 4 | Advanced Extraction | Not Started | 3 | 0/0 |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 |
