@@ -1,46 +1,23 @@
-import 'dotenv/config';
-import express from 'express';
-import { router } from '../src/routes/index.js';
-import { initializeDatabase } from '../src/db/schema.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Create Express app
-const app = express();
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>RSS Service - Test</title>
+  <style>
+    body { font-family: system-ui; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #333; }
+  </style>
+</head>
+<body>
+  <h1>RSS Service</h1>
+  <p>If you see this, the serverless function is working!</p>
+  <p>Request path: ${req.url}</p>
+  <p>Env vars set: SUPABASE_URL=${process.env.SUPABASE_URL ? 'yes' : 'no'}, SUPABASE_ANON_KEY=${process.env.SUPABASE_ANON_KEY ? 'yes' : 'no'}</p>
+</body>
+</html>`;
 
-// Apply middleware (skip compression and static files - handled by Vercel)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Mount routes
-app.use(router);
-
-// Error handler
-app.use((err: any, _req: any, res: any, _next: any) => {
-  console.error('Express error:', err);
-  res.status(500).json({ error: err.message || 'Internal server error' });
-});
-
-// Initialize database on cold start
-let dbInitialized = false;
-const initDb = async () => {
-  if (!dbInitialized) {
-    try {
-      await initializeDatabase();
-      dbInitialized = true;
-    } catch (error) {
-      console.error('DB init failed:', error);
-      // Don't throw - let the app continue
-      dbInitialized = true;
-    }
-  }
-};
-
-// Wrap the app with db initialization
-export default async function handler(req: any, res: any) {
-  try {
-    await initDb();
-    return app(req, res);
-  } catch (error: any) {
-    console.error('Handler error:', error);
-    res.status(500).json({ error: error.message || 'Handler failed' });
-  }
+  res.setHeader('Content-Type', 'text/html');
+  res.status(200).send(html);
 }
