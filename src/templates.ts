@@ -110,6 +110,58 @@ export const pages: Record<string, string> = {
   </div>
 </div>`,
 
+  feeds: `<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">My Feeds</h1>
+      <p class="text-base-content/70 mt-1">Manage your RSS feeds</p>
+    </div>
+    <a href="/create" class="btn btn-primary">Create New Feed</a>
+  </div>
+
+  <!-- Feed Table -->
+  <div class="card bg-base-200">
+    <div class="card-body p-0">
+      <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+          <thead>
+            <tr>
+              <th>Feed Name</th>
+              <th>Status</th>
+              <th>Items</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="feed-list">
+            <tr id="loading-row">
+              <td colspan="5" class="text-center py-8 text-base-content/60">Loading feeds...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <dialog id="delete-modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Delete Feed</h3>
+      <p class="py-4">Are you sure you want to delete <strong><span id="delete-feed-name"></span></strong>? This action cannot be undone.</p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost">Cancel</button>
+        </form>
+        <button id="confirm-delete" class="btn btn-error">Delete</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</div>
+<script src="/js/dashboard.js"></script>`,
+
   create: `<div class="max-w-2xl mx-auto">
   <h1 class="text-3xl font-bold mb-2">Create New Feed</h1>
   <p class="text-base-content/70 mb-8">Enter a URL and we'll automatically detect the content.</p>

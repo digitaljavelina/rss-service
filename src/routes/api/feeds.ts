@@ -406,6 +406,48 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
   }
 });
 
+// DELETE /:id - Delete a feed and its items
+feedsApiRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    // Find feed by id or slug
+    const { data: feed, error: feedError } = await supabase
+      .from('feeds')
+      .select('id, slug')
+      .or(`id.eq.${id},slug.eq.${id}`)
+      .single();
+
+    if (feedError || !feed) {
+      res.status(404).json({ success: false, errors: ['Feed not found'] });
+      return;
+    }
+
+    const feedRow = feed as Pick<FeedRow, 'id' | 'slug'>;
+
+    // Delete feed (items cascade automatically via foreign key constraint)
+    const { error: deleteError } = await supabase
+      .from('feeds')
+      .delete()
+      .eq('id', feedRow.id);
+
+    if (deleteError) {
+      console.error('Error deleting feed:', deleteError);
+      res.status(500).json({ success: false, errors: ['Failed to delete feed'] });
+      return;
+    }
+
+    // Invalidate cache entries for this feed
+    invalidateFeed(feedRow.slug);
+    invalidateFeed(feedRow.id);
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Delete feed error:', error);
+    res.status(500).json({ success: false, errors: ['Internal server error'] });
+  }
+});
+
 // GET /:id/export - Download feed as XML file
 feedsApiRouter.get('/:id/export', async (req: Request, res: Response): Promise<void> => {
   const id = req.params.id as string;

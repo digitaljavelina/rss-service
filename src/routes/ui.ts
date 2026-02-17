@@ -23,3 +23,8 @@ uiRouter.get('/create', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(servePage('create'));
 });
+
+uiRouter.get('/feeds', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(servePage('feeds'));
+});
