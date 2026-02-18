@@ -238,6 +238,20 @@ export const pages: Record<string, string> = {
         <input type="number" id="item-limit" class="input input-bordered" min="1" max="1000" value="100" />
       </div>
 
+      <div class="form-control mt-4">
+        <label class="label">
+          <span class="label-text">Auto-refresh interval</span>
+        </label>
+        <select id="refresh-interval" class="select select-bordered">
+          <option value="">Manual only</option>
+          <option value="15">Every 15 minutes</option>
+          <option value="30">Every 30 minutes</option>
+          <option value="60">Every hour</option>
+          <option value="360">Every 6 hours</option>
+          <option value="1440">Daily</option>
+        </select>
+      </div>
+
       <!-- Actions -->
       <div class="flex gap-4 mt-6">
         <button id="btn-save" class="btn btn-primary flex-1">

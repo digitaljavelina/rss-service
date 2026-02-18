@@ -10,6 +10,7 @@
   const sourceUrlInput = document.getElementById('source-url');
   const feedUrlDisplay = document.getElementById('feed-url-display');
   const itemLimitInput = document.getElementById('item-limit');
+  const refreshIntervalSelect = document.getElementById('refresh-interval');
   const btnSave = document.getElementById('btn-save');
   const btnCopyUrl = document.getElementById('btn-copy-url');
   const errorSection = document.getElementById('edit-errors');
@@ -135,6 +136,12 @@
       itemLimitInput.value = feed.itemLimit !== undefined ? feed.itemLimit : 100;
       feedUrlDisplay.value = feed.feedUrl || '';
 
+      // Populate refresh interval dropdown with current value
+      if (refreshIntervalSelect) {
+        const currentInterval = feed.refreshIntervalMinutes != null ? String(feed.refreshIntervalMinutes) : '';
+        refreshIntervalSelect.value = currentInterval;
+      }
+
       // Store original URL for change detection
       originalUrl = feed.url || '';
 
@@ -190,6 +197,9 @@
     const name = feedNameInput.value.trim();
     const url = sourceUrlInput.value.trim();
     const itemLimit = parseInt(itemLimitInput.value, 10);
+    // Parse refresh interval (empty string = manual only = null)
+    const intervalValue = refreshIntervalSelect ? refreshIntervalSelect.value : '';
+    const refreshIntervalMinutes = intervalValue ? parseInt(intervalValue, 10) : null;
 
     setLoading(btnSave, true);
 
@@ -199,7 +209,7 @@
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, url, itemLimit }),
+        body: JSON.stringify({ name, url, itemLimit, refresh_interval_minutes: refreshIntervalMinutes }),
       });
 
       const result = await response.json();
