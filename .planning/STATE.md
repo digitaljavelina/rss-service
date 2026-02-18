@@ -4,21 +4,22 @@
 
 **Core Value:** Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
 
-**Current Focus:** Feed Management (Phase 3) - Complete
+**Current Focus:** Advanced Extraction (Phase 4) - In Progress
 
 ---
 
 ## Current Position
 
-**Phase:** 3 of 6 (Feed Management) - Complete
-**Plan:** 4 of 4 in phase (verification)
-**Status:** Phase complete and verified
-**Last activity:** 2026-02-17 - Completed 03-04-PLAN.md (human verification)
+**Phase:** 4 of 6 (Advanced Extraction) - In Progress
+**Plan:** 2 of 3 in phase (headless API + selector UI)
+**Status:** Plan 04-02 complete
+**Last activity:** 2026-02-17 - Completed 04-02-PLAN.md (headless API + selector UI)
 
-**Progress:** ██████░░░░ 36% (13/36 plans)
+**Progress:** ██████░░░░ 42% (15/36 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
 Phase 3: ██████████ 100% (4/4 plans)
+Phase 4: ██████░░░░ 67% (2/3 plans)
 
 ---
 
@@ -29,11 +30,11 @@ Phase 3: ██████████ 100% (4/4 plans)
 | 1 | Foundation & Setup | Complete ✅ | 8 | 4/4 | 100% |
 | 2 | Core Feed Creation | Complete ✅ | 7 | 5/5 | 100% |
 | 3 | Feed Management | Complete ✅ | 8 | 4/4 | 100% |
-| 4 | Advanced Extraction | Not Started | 3 | 0/0 | 0% |
+| 4 | Advanced Extraction | In Progress | 3 | 2/3 | 67% |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 | 0% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 13/36 plans completed (36%)
+**Overall Progress:** 15/36 plans completed (42%)
 
 ---
 
@@ -107,10 +108,13 @@ Phase 3: ██████████ 100% (4/4 plans)
 | Reset file input after processing | Allows user to re-select same file for re-import without clearing the value manually | 2026-02-17 |
 | Single-row refresh | Refresh updates only the affected row instead of reloading entire table | 2026-02-17 |
 | Div wrapper for flex in td | Using flex directly on td breaks table-cell display; wrap in div instead | 2026-02-17 |
+| @sparticuz/chromium for serverless | Purpose-built for Lambda/Vercel; fits 250MB bundle limit with puppeteer-core | 2026-02-17 |
+| Lazy browser singleton | Reuse browser across warm instances; launching per-request adds 3-8s cold start | 2026-02-17 |
+| headless: 'shell' mode | Required for @sparticuz/chromium; 'true' deprecated in Puppeteer v21+ | 2026-02-17 |
+| Environment detection for browser | process.env.VERCEL check; use @sparticuz/chromium on Vercel, full puppeteer locally | 2026-02-17 |
 
 ### Open Questions
 
-- Which visual selector library to use? (Puppeteer vs Playwright for macOS)
 - How to handle authentication for platform APIs? (storage strategy)
 - Job queue library choice? (node-cron vs BullMQ)
 
@@ -131,33 +135,26 @@ Phase 3: ██████████ 100% (4/4 plans)
 ## Session Continuity
 
 **Last Session:** 2026-02-17
-**Stopped at:** Completed 03-04-PLAN.md (human verification)
+**Stopped at:** Completed 04-01-PLAN.md (headless browser infrastructure)
 **Resume file:** None
 
 **Context for Next Session:**
-- Phase 1 Foundation complete and deployed to Vercel
-- Phase 2 Core Feed Creation complete
-- Phase 3 Feed Management complete (all 4 plans including verification)
+- Phase 1-3 complete and deployed to Vercel
+- Phase 4 in progress (1/3 plans complete)
 - Production URL: https://rss-service-five.vercel.app/
 - Supabase database with feeds/items tables
 - Auto-detection service: autoDetectSelectors(), autoExtractItems()
 - Preview API: POST /api/preview with auto-detection
-- Feed CRUD API: POST/GET/PUT /api/feeds, GET /api/feeds/:id, DELETE /api/feeds/:id
-- Feed refresh: POST /api/feeds/:id/refresh with deduplication
-- Feed export (XML): GET /api/feeds/:id/export with Content-Disposition
-- Dashboard: GET /feeds (feed table, refresh/export/delete/edit actions, delete modal)
-- dashboard.js: IIFE, event delegation, native dialog modal, export/import
-- Export: exportFeed() fetches /api/feeds/:slug, builds config, downloads via Blob
-- Import: FileReader reads JSON, validateFeedConfig(), importFeed() POSTs to /api/feeds
-- Feed config JSON format: { name, url, selectors, itemLimit, items, exportedAt }
-- Edit page: GET /feeds/:slug/edit with pre-filled form
-- edit-feed.js: IIFE, loadFeed(), validateForm(), PUT with urlChanged detection
-- PUT endpoint clears/re-fetches items when URL changes
-- Refresh: single-row update via fetch /api/feeds/:id after refresh API call
-- Table actions: flex wrapper inside td (not on td itself) to preserve table layout
+- Feed CRUD APIs complete
+- Dashboard with list/refresh/delete/edit/export/import
+- NEW: page-fetcher-browser.ts with fetchPageWithBrowser()
+- NEW: likelyNeedsJavaScript() heuristic in page-fetcher.ts
+- NEW: vercel.json configured with memory: 1024, maxDuration: 60
+- NEW: @sparticuz/chromium@143.0.4, puppeteer-core@24.37.3 installed
 
 **Next Steps:**
-1. Plan and execute Phase 4 (Advanced Extraction)
+1. Execute 04-02-PLAN.md (wire useHeadless flag through APIs)
+2. Execute 04-03-PLAN.md (selector adjustment UI)
 
 ---
 

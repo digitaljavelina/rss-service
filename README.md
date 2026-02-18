@@ -10,6 +10,9 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 
 - **URL to RSS** - Turn any webpage into an RSS feed
 - **Auto-Detection** - Automatically finds content patterns (articles, lists, links)
+- **Headless Browser** - Opt-in browser rendering for JavaScript-heavy sites (SPAs, React apps)
+- **JS-Need Detection** - Suggests headless mode when static extraction finds minimal content
+- **Selector Adjustment** - View and edit auto-detected CSS selectors, re-preview with changes
 - **Preview Before Save** - See what you'll get before creating the feed
 - **Multiple Formats** - RSS 2.0 and Atom support
 - **Feed Dashboard** - View all feeds with status, item count, and last updated time
@@ -127,10 +130,21 @@ npm start
 POST /api/preview
 Content-Type: application/json
 
-{ "url": "https://example.com" }
+{
+  "url": "https://example.com",
+  "useHeadless": false,
+  "selectors": { "item": ".post", "title": "h2" }
+}
 ```
 
 Auto-detects content and returns extracted items for preview.
+
+**Options:**
+- `useHeadless` (optional): Use headless browser for JS-heavy sites
+- `selectors` (optional): Override auto-detected CSS selectors
+
+**Response includes:**
+- `suggestHeadless`: `true` if page appears to need JavaScript rendering
 
 ### Create Feed
 
@@ -138,10 +152,17 @@ Auto-detects content and returns extracted items for preview.
 POST /api/feeds
 Content-Type: application/json
 
-{ "name": "My Feed", "url": "https://example.com" }
+{
+  "name": "My Feed",
+  "url": "https://example.com",
+  "useHeadless": false
+}
 ```
 
 Creates a new feed with auto-detected selectors.
+
+**Options:**
+- `useHeadless` (optional): Store headless preference for future refreshes
 
 ### List Feeds
 
@@ -218,6 +239,12 @@ Download feed as XML file with `Content-Disposition` header for browser download
 | `/feeds/:slug/edit` | Edit feed configuration |
 | `/feeds/:slug` | RSS/Atom feed output |
 
+## Deployment Notes
+
+The Vercel deployment is configured with:
+- **Memory:** 1024 MB (for headless browser)
+- **Max Duration:** 60 seconds (for browser-based fetching)
+
 ## Project Status
 
 | Phase | Status |
@@ -225,7 +252,7 @@ Download feed as XML file with `Content-Disposition` header for browser download
 | 1. Foundation & Setup | ✅ Complete |
 | 2. Core Feed Creation | ✅ Complete |
 | 3. Feed Management | ✅ Complete |
-| 4. Advanced Extraction | ⏳ Planned |
+| 4. Advanced Extraction | ✅ Complete |
 | 5. Automation & Scheduling | ⏳ Planned |
 | 6. Platform Integrations | ⏳ Planned |
 
