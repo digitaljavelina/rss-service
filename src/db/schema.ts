@@ -65,4 +65,20 @@ export async function initializeDatabase(): Promise<void> {
  * -- Policies to allow all operations (single-user app)
  * CREATE POLICY "Allow all on feeds" ON feeds FOR ALL USING (true) WITH CHECK (true);
  * CREATE POLICY "Allow all on items" ON items FOR ALL USING (true) WITH CHECK (true);
+ *
+ * -- Phase 5: Add scheduling columns (run in Supabase SQL Editor)
+ * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS refresh_interval_minutes INTEGER DEFAULT NULL;
+ * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS next_refresh_at TIMESTAMPTZ DEFAULT NULL;
+ * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS refresh_status TEXT DEFAULT 'idle';
+ * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS last_refresh_error TEXT DEFAULT NULL;
+ *
+ * -- Indexes for scheduling queries
+ * CREATE INDEX IF NOT EXISTS idx_feeds_next_refresh ON feeds(next_refresh_at) WHERE next_refresh_at IS NOT NULL;
+ * CREATE INDEX IF NOT EXISTS idx_feeds_refresh_status ON feeds(refresh_status);
+ *
+ * -- Column documentation
+ * COMMENT ON COLUMN feeds.refresh_interval_minutes IS 'Refresh interval in minutes (NULL = manual only)';
+ * COMMENT ON COLUMN feeds.next_refresh_at IS 'Next scheduled refresh time (NULL = no auto-refresh)';
+ * COMMENT ON COLUMN feeds.refresh_status IS 'idle, refreshing, error';
+ * COMMENT ON COLUMN feeds.last_refresh_error IS 'Error message from last failed refresh';
  */

@@ -1,16 +1,7 @@
 import { Feed } from 'feed';
 import { supabase } from '../db/index.js';
 import { getCachedFeed, setCachedFeed } from './feed-cache.js';
-
-interface FeedRow {
-  id: string;
-  slug: string;
-  name: string;
-  url: string | null;
-  item_limit: number;
-  created_at: string;
-  updated_at: string;
-}
+import type { FeedRow } from '../types/feed.js';
 
 interface ItemRow {
   id: string;

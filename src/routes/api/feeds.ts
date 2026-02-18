@@ -19,7 +19,7 @@ import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
 import { invalidateFeed } from '../../services/feed-cache.js';
 import { buildFeed } from '../../services/feed-builder.js';
-import type { FeedSelectors, ExtractedItem } from '../../types/feed.js';
+import type { FeedSelectors, ExtractedItem, FeedRow } from '../../types/feed.js';
 
 // Create feeds API router
 export const feedsApiRouter = Router();
@@ -35,17 +35,6 @@ interface CreateFeedRequest {
     description?: string | null;
     pubDate?: string | null;
   }>;
-}
-
-interface FeedRow {
-  id: string;
-  slug: string;
-  name: string;
-  url: string | null;
-  selectors: string;
-  item_limit: number;
-  created_at: string;
-  updated_at: string;
 }
 
 /**
