@@ -174,7 +174,7 @@ export const pages: Record<string, string> = {
   editFeed: `<div class="max-w-2xl mx-auto">
   <div class="flex items-center justify-between mb-2">
     <h1 class="text-3xl font-bold">Edit Feed</h1>
-    <a href="/feeds" class="btn btn-ghost btn-sm">Back to Dashboard</a>
+    <a href="/feeds" class="btn btn-ghost btn-sm">Back to My Feeds</a>
   </div>
   <p class="text-base-content/70 mb-8">Update your feed configuration.</p>
 

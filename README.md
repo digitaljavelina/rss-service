@@ -228,7 +228,7 @@ GET /api/cron/scheduler
 Authorization: Bearer <CRON_SECRET>
 ```
 
-Called automatically by Vercel Cron every minute. Finds feeds whose `next_refresh_at` is in the past, refreshes up to 5 per run, and updates `next_refresh_at` for the next cycle. Requires `CRON_SECRET` environment variable.
+Called automatically by Vercel Cron once daily (midnight UTC on Hobby plan). Finds feeds whose `next_refresh_at` is in the past, refreshes up to 5 per run, and updates `next_refresh_at` for the next cycle. Self-hosted deployments can trigger this endpoint at any frequency. Requires `CRON_SECRET` environment variable.
 
 ### Export Feed (XML)
 
@@ -262,12 +262,12 @@ The Vercel deployment is configured with:
 
 ### Auto-Refresh Setup (Phase 5)
 
-Vercel Cron runs the scheduler every minute. To enable auto-refresh in production:
+Vercel Cron triggers the scheduler on a schedule configured in `vercel.json`. To enable auto-refresh in production:
 
 1. Generate a cron secret: `openssl rand -hex 32`
 2. Add `CRON_SECRET` to your Vercel Dashboard environment variables
-3. Vercel Pro plan is required for per-minute cron jobs (Hobby plan supports daily cron only)
-4. The cron endpoint is already configured in `vercel.json`
+3. Vercel Hobby plan limits cron to once per day (`0 0 * * *`). Upgrade to Pro for higher frequency.
+4. **Self-hosted** (Docker, launchd, etc.) can call `/api/cron/scheduler` at any frequency with no limits
 
 ## Project Status
 

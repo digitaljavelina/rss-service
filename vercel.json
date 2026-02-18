@@ -15,7 +15,7 @@
   "crons": [
     {
       "path": "/api/cron/scheduler",
-      "schedule": "* * * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "rewrites": [

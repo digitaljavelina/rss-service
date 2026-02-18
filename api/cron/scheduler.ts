@@ -182,7 +182,9 @@ async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
  *   Authorization: Bearer <CRON_SECRET>
  *
  * Security: We verify this header to reject unauthorized requests.
- * Schedule: Configured in vercel.json as "* * * * *" (every minute).
+ * Schedule: Configured in vercel.json as "0 0 * * *" (daily at midnight UTC).
+ * Note: Vercel Hobby plan limits cron to once/day. Self-hosted deployments
+ * can trigger this endpoint at any frequency (e.g., every minute via node-cron).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow GET (Vercel cron uses GET)
