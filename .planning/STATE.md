@@ -4,22 +4,23 @@
 
 **Core Value:** Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
 
-**Current Focus:** Advanced Extraction (Phase 4) - In Progress
+**Current Focus:** Phase 4 Complete - Ready for Phase 5 (Automation & Scheduling)
 
 ---
 
 ## Current Position
 
-**Phase:** 4 of 6 (Advanced Extraction) - In Progress
-**Plan:** 2 of 3 in phase (headless API + selector UI)
-**Status:** Plan 04-02 complete
-**Last activity:** 2026-02-17 - Completed 04-02-PLAN.md (headless API + selector UI)
+**Phase:** 5 of 6 (Automation & Scheduling) - In progress
+**Plan:** 1 of 5 in phase (complete)
+**Status:** In progress
+**Last activity:** 2026-02-18 - Completed 05-01-PLAN.md (database schema for scheduling)
 
-**Progress:** ██████░░░░ 42% (15/36 plans)
+**Progress:** ██████████░░░░░░░░░░ 47% (17/36 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
 Phase 3: ██████████ 100% (4/4 plans)
-Phase 4: ██████░░░░ 67% (2/3 plans)
+Phase 4: ██████████ 100% (3/3 plans)
+Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 
 ---
 
@@ -27,27 +28,26 @@ Phase 4: ██████░░░░ 67% (2/3 plans)
 
 | Phase | Name | Status | Requirements | Plans | Completed |
 |-------|------|--------|--------------|-------|-----------|
-| 1 | Foundation & Setup | Complete ✅ | 8 | 4/4 | 100% |
-| 2 | Core Feed Creation | Complete ✅ | 7 | 5/5 | 100% |
-| 3 | Feed Management | Complete ✅ | 8 | 4/4 | 100% |
-| 4 | Advanced Extraction | In Progress | 3 | 2/3 | 67% |
-| 5 | Automation & Scheduling | Not Started | 4 | 0/0 | 0% |
+| 1 | Foundation & Setup | Complete | 8 | 4/4 | 100% |
+| 2 | Core Feed Creation | Complete | 7 | 5/5 | 100% |
+| 3 | Feed Management | Complete | 8 | 4/4 | 100% |
+| 4 | Advanced Extraction | Complete | 3 | 3/3 | 100% |
+| 5 | Automation & Scheduling | In Progress | 4 | 1/5 | 20% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 15/36 plans completed (42%)
+**Overall Progress:** 17/36 plans completed (47%)
 
 ---
 
 ## Performance Metrics
 
-**Milestone:** Feed Management complete ✅
-**Velocity:** 12 plans completed
+**Milestone:** Phase 5 started - scheduling database schema complete
+**Velocity:** 17 plans completed
 **Rework Rate:** 0%
 
 **Quality Indicators:**
-- Plans completed: 12
-- Phase 1 verified by user
-- Phase 2 verified by user
+- Plans completed: 16
+- Phase 1-4 verified by user
 - Deployed to Vercel production
 - Supabase database operational
 - Auto-detection service with pattern matching
@@ -58,6 +58,8 @@ Phase 4: ██████░░░░ 67% (2/3 plans)
 - Feed dashboard with list/refresh/delete/edit actions
 - Feed edit with URL re-detection and urlChanged signaling
 - Feed export (JSON download) and import (JSON upload)
+- Automatic headless browser for JS-heavy sites
+- Simplified UX (no manual toggles or selector UI)
 
 ---
 
@@ -112,15 +114,24 @@ Phase 4: ██████░░░░ 67% (2/3 plans)
 | Lazy browser singleton | Reuse browser across warm instances; launching per-request adds 3-8s cold start | 2026-02-17 |
 | headless: 'shell' mode | Required for @sparticuz/chromium; 'true' deprecated in Puppeteer v21+ | 2026-02-17 |
 | Environment detection for browser | process.env.VERCEL check; use @sparticuz/chromium on Vercel, full puppeteer locally | 2026-02-17 |
+| Remove selector adjustment UI | Most users won't understand CSS selectors; keep detection automatic | 2026-02-18 |
+| Automatic headless browser | No manual toggle; system detects JS-heavy pages and retries with headless automatically | 2026-02-18 |
+| Manual SQL migration for schema changes | Supabase SQL Editor used directly; consistent with original schema creation approach | 2026-02-18 |
+| refresh_status defaults to 'idle' | Safe default for existing rows; no backfill required after column addition | 2026-02-18 |
+| NULL refresh_interval_minutes = manual only | Explicit nullable design avoids sentinel integers for manual-only refresh | 2026-02-18 |
+| TIMESTAMPTZ for next_refresh_at | Timezone-aware scheduling ensures correct behavior across server regions | 2026-02-18 |
 
 ### Open Questions
 
 - How to handle authentication for platform APIs? (storage strategy)
-- Job queue library choice? (node-cron vs BullMQ)
+- Job queue library choice? (node-cron vs BullMQ - to be resolved in Plan 05-02)
 
 ### Active Todos
 
-(None - Phase 3 complete, ready for Phase 4 planning)
+- Execute Plan 05-02 (cron job runner)
+- Execute Plan 05-03 (feed settings UI for refresh interval)
+- Execute Plan 05-04 (API routes for scheduling)
+- Execute Plan 05-05 (verification)
 
 ### Known Blockers
 
@@ -134,27 +145,24 @@ Phase 4: ██████░░░░ 67% (2/3 plans)
 
 ## Session Continuity
 
-**Last Session:** 2026-02-17
-**Stopped at:** Completed 04-01-PLAN.md (headless browser infrastructure)
+**Last Session:** 2026-02-18
+**Stopped at:** Completed 05-01-PLAN.md (database schema for scheduling)
 **Resume file:** None
 
 **Context for Next Session:**
-- Phase 1-3 complete and deployed to Vercel
-- Phase 4 in progress (1/3 plans complete)
+- Phase 1-4 complete and deployed to Vercel
 - Production URL: https://rss-service-five.vercel.app/
-- Supabase database with feeds/items tables
+- Supabase database with feeds/items tables + scheduling columns
+- Scheduling columns: refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error
+- Indexes: idx_feeds_next_refresh (partial), idx_feeds_refresh_status
+- FeedRow TypeScript interface updated (src/types/feed.ts)
+- REFRESH_INTERVALS constant exported from src/types/feed.ts
 - Auto-detection service: autoDetectSelectors(), autoExtractItems()
-- Preview API: POST /api/preview with auto-detection
-- Feed CRUD APIs complete
-- Dashboard with list/refresh/delete/edit/export/import
-- NEW: page-fetcher-browser.ts with fetchPageWithBrowser()
-- NEW: likelyNeedsJavaScript() heuristic in page-fetcher.ts
-- NEW: vercel.json configured with memory: 1024, maxDuration: 60
-- NEW: @sparticuz/chromium@143.0.4, puppeteer-core@24.37.3 installed
+- Headless browser infrastructure: page-fetcher-browser.ts with fetchPageWithBrowser()
+- Vercel config: memory 1024MB, maxDuration 60s
 
 **Next Steps:**
-1. Execute 04-02-PLAN.md (wire useHeadless flag through APIs)
-2. Execute 04-03-PLAN.md (selector adjustment UI)
+1. Plan 05-02: Cron job runner for scheduled feed refreshes
 
 ---
 
@@ -182,6 +190,15 @@ Phase 4: ██████░░░░ 67% (2/3 plans)
 - All features verified: Dashboard, Refresh, Edit, Delete, Export, Import, Error States
 - No blockers for Phase 4
 
+### Phase 4 Checkpoint (2026-02-18)
+- All 3 plans executed (headless infrastructure, API wiring, verification)
+- Human verification completed and approved
+- UX simplifications during verification:
+  - Removed selector adjustment panel (users don't need to see CSS selectors)
+  - Removed headless browser toggle (automatic detection is better UX)
+- Final implementation: automatic JS detection with headless fallback
+- All Phase 4 requirements satisfied (CORE-06, CORE-07, CORE-08)
+
 ---
 
-*Last updated: 2026-02-17*
+*Last updated: 2026-02-18 (after 05-01 completion)*

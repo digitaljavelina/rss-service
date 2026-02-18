@@ -148,6 +148,15 @@ Plans:
 
 **Goal:** Feeds automatically update on schedule without manual intervention.
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Database schema for scheduling (refresh_interval, next_refresh_at, status)
+- [ ] 05-02-PLAN.md — Vercel cron job coordinator
+- [ ] 05-03-PLAN.md — Refresh interval UI in create/edit feed
+- [ ] 05-04-PLAN.md — Dashboard refresh timing display
+- [ ] 05-05-PLAN.md — README update and human verification
+
 **Requirements:**
 - SCHED-01: System polls feeds on configurable intervals (per-feed setting)
 - SCHED-02: System runs background jobs to fetch feed updates
@@ -161,6 +170,8 @@ Plans:
 4. Multiple feeds update concurrently without conflicts
 
 **Dependencies:** Phase 2
+
+**Status:** Planned
 
 ---
 
@@ -234,8 +245,9 @@ Plans:
 |-------|------|--------|--------------|-------|
 | 1 | Foundation & Setup | Complete | 8 | 4/4 |
 | 2 | Core Feed Creation | Complete | 7 | 5/5 |
-| 3 | Feed Management | Planned | 8 | 0/4 |
-| 4 | Advanced Extraction | Planned | 3 | 0/3 |
+| 3 | Feed Management | Complete | 8 | 4/4 |
+| 4 | Advanced Extraction | Complete | 3 | 3/3 |
+| 5 | Automation & Scheduling | Planned | 4 | 0/5 |
 | 5 | Automation & Scheduling | Not Started | 4 | 0/0 |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 |
 
