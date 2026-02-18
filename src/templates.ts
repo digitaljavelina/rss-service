@@ -328,38 +328,6 @@ export const pages: Record<string, string> = {
 
     <div id="preview-items" class="space-y-3"></div>
 
-    <!-- Selector Adjustment Panel -->
-    <div id="selector-panel" class="collapse collapse-arrow bg-base-200 mt-4 hidden">
-      <input type="checkbox" />
-      <div class="collapse-title font-medium text-sm">Adjust Selectors</div>
-      <div class="collapse-content">
-        <p class="text-xs text-base-content/60 mb-3">Auto-detected CSS selectors. Edit to refine extraction.</p>
-        <div class="form-control mb-2">
-          <label class="label py-1"><span class="label-text text-xs">Item container</span></label>
-          <input type="text" id="sel-item" class="input input-bordered input-sm" placeholder="e.g. article, .post" />
-        </div>
-        <div class="form-control mb-2">
-          <label class="label py-1"><span class="label-text text-xs">Title</span></label>
-          <input type="text" id="sel-title" class="input input-bordered input-sm" placeholder="e.g. h2 a, .title" />
-        </div>
-        <div class="form-control mb-2">
-          <label class="label py-1"><span class="label-text text-xs">Link</span></label>
-          <input type="text" id="sel-link" class="input input-bordered input-sm" placeholder="e.g. a[href]" />
-        </div>
-        <div class="form-control mb-2">
-          <label class="label py-1"><span class="label-text text-xs">Description (optional)</span></label>
-          <input type="text" id="sel-description" class="input input-bordered input-sm" placeholder="e.g. .summary, p" />
-        </div>
-        <div class="form-control mb-2">
-          <label class="label py-1"><span class="label-text text-xs">Date (optional)</span></label>
-          <input type="text" id="sel-date" class="input input-bordered input-sm" placeholder="e.g. time, .date" />
-        </div>
-        <button id="btn-repreview" class="btn btn-sm btn-outline mt-2">
-          <span class="loading loading-spinner loading-sm hidden"></span>
-          Re-preview with these selectors
-        </button>
-      </div>
-    </div>
   </div>
 </div>
 <script src="/js/create-feed.js"></script>`

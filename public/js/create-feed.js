@@ -1,5 +1,5 @@
 // Create Feed Form Handler
-// With headless browser toggle and selector adjustment panel
+// Simplified UI - selector detection is automatic in the background
 
 (function() {
   'use strict';
@@ -20,15 +20,6 @@
   // Headless browser elements
   const useHeadless = document.getElementById('use-headless');
   const headlessSuggestion = document.getElementById('headless-suggestion');
-
-  // Selector panel elements
-  const selectorPanel = document.getElementById('selector-panel');
-  const selItem = document.getElementById('sel-item');
-  const selTitle = document.getElementById('sel-title');
-  const selLink = document.getElementById('sel-link');
-  const selDescription = document.getElementById('sel-description');
-  const selDate = document.getElementById('sel-date');
-  const btnRepreview = document.getElementById('btn-repreview');
 
   // Store preview data for save
   let lastPreviewData = null;
@@ -74,38 +65,6 @@
     while (element.firstChild) {
       element.removeChild(element.firstChild);
     }
-  }
-
-  /**
-   * Build selectors object from inputs (only include non-empty values)
-   */
-  function getSelectorsFromInputs() {
-    const selectors = {};
-    const item = selItem.value.trim();
-    const title = selTitle.value.trim();
-    const link = selLink.value.trim();
-    const description = selDescription.value.trim();
-    const date = selDate.value.trim();
-
-    if (item) selectors.item = item;
-    if (title) selectors.title = title;
-    if (link) selectors.link = link;
-    if (description) selectors.description = description;
-    if (date) selectors.date = date;
-
-    return Object.keys(selectors).length > 0 ? selectors : null;
-  }
-
-  /**
-   * Populate selector inputs from data
-   */
-  function populateSelectorInputs(selectors) {
-    if (!selectors) return;
-    selItem.value = selectors.item || '';
-    selTitle.value = selectors.title || '';
-    selLink.value = selectors.link || '';
-    selDescription.value = selectors.description || '';
-    selDate.value = selectors.date || '';
   }
 
   /**
@@ -170,14 +129,6 @@
       }
     }
 
-    // Show selector panel after preview
-    selectorPanel.classList.remove('hidden');
-
-    // Populate selector inputs from detected selectors
-    if (data.selectors) {
-      populateSelectorInputs(data.selectors);
-    }
-
     // Handle suggestHeadless flag
     if (data.suggestHeadless === true && !useHeadless.checked) {
       headlessSuggestion.classList.remove('hidden');
@@ -196,7 +147,6 @@
    */
   function showPreviewError(message) {
     previewSection.classList.add('hidden');
-    selectorPanel.classList.add('hidden');
     headlessSuggestion.classList.add('hidden');
     previewErrors.classList.remove('hidden');
     previewErrorText.textContent = message;
@@ -219,22 +169,13 @@
     useHeadless.disabled = true;
     btnPreview.disabled = true;
     btnSave.disabled = true;
-    btnRepreview.disabled = true;
-    selItem.disabled = true;
-    selTitle.disabled = true;
-    selLink.disabled = true;
-    selDescription.disabled = true;
-    selDate.disabled = true;
   }
 
   /**
    * Call preview API
    */
-  async function callPreviewApi(url, headless, selectors) {
+  async function callPreviewApi(url, headless) {
     const body = { url, useHeadless: headless };
-    if (selectors) {
-      body.selectors = selectors;
-    }
 
     const response = await fetch('/api/preview', {
       method: 'POST',
@@ -266,12 +207,11 @@
 
     const url = sourceUrl.value.trim();
     const headless = useHeadless.checked;
-    const selectors = getSelectorsFromInputs();
 
     setLoading(btnPreview, true);
 
     try {
-      const result = await callPreviewApi(url, headless, selectors);
+      const result = await callPreviewApi(url, headless);
 
       // Store for save
       lastPreviewData = result;
@@ -292,47 +232,6 @@
     }
   };
 
-  // Re-preview button click handler
-  btnRepreview.onclick = async function() {
-    hideErrors();
-
-    // Validate that at least item and title selectors are filled
-    const item = selItem.value.trim();
-    const title = selTitle.value.trim();
-
-    if (!item || !title) {
-      showPreviewError('Item container and Title selectors are required for re-preview.');
-      return;
-    }
-
-    const url = sourceUrl.value.trim();
-    const headless = useHeadless.checked;
-    const selectors = getSelectorsFromInputs();
-
-    setLoading(btnRepreview, true);
-
-    try {
-      const result = await callPreviewApi(url, headless, selectors);
-
-      // Store for save
-      lastPreviewData = result;
-
-      // Render preview
-      renderPreview(result);
-
-      // Enable save button if items found
-      if (result.items && result.items.length > 0) {
-        btnSave.disabled = false;
-      } else {
-        btnSave.disabled = true;
-      }
-    } catch (error) {
-      showPreviewError(error.message || 'Failed to re-preview. Please check the selectors and try again.');
-    } finally {
-      setLoading(btnRepreview, false);
-    }
-  };
-
   // Save button click handler
   btnSave.onclick = async function() {
     hideErrors();
@@ -346,15 +245,11 @@
     const url = sourceUrl.value.trim();
     const name = feedName.value.trim() || lastPreviewData.metadata?.pageTitle || 'Untitled Feed';
     const headless = useHeadless.checked;
-    const selectors = getSelectorsFromInputs();
 
     setLoading(btnSave, true);
 
     try {
       const body = { name, url, useHeadless: headless };
-      if (selectors) {
-        body.selectors = selectors;
-      }
 
       const response = await fetch('/api/feeds', {
         method: 'POST',

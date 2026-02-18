@@ -12,7 +12,6 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 - **Auto-Detection** - Automatically finds content patterns (articles, lists, links)
 - **Headless Browser** - Opt-in browser rendering for JavaScript-heavy sites (SPAs, React apps)
 - **JS-Need Detection** - Suggests headless mode when static extraction finds minimal content
-- **Selector Adjustment** - View and edit auto-detected CSS selectors, re-preview with changes
 - **Preview Before Save** - See what you'll get before creating the feed
 - **Multiple Formats** - RSS 2.0 and Atom support
 - **Feed Dashboard** - View all feeds with status, item count, and last updated time
@@ -132,8 +131,7 @@ Content-Type: application/json
 
 {
   "url": "https://example.com",
-  "useHeadless": false,
-  "selectors": { "item": ".post", "title": "h2" }
+  "useHeadless": false
 }
 ```
 
@@ -141,7 +139,6 @@ Auto-detects content and returns extracted items for preview.
 
 **Options:**
 - `useHeadless` (optional): Use headless browser for JS-heavy sites
-- `selectors` (optional): Override auto-detected CSS selectors
 
 **Response includes:**
 - `suggestHeadless`: `true` if page appears to need JavaScript rendering
