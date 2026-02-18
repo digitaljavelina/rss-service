@@ -288,16 +288,6 @@ export const pages: Record<string, string> = {
     </div>
   </div>
 
-  <!-- Platform Type Tabs -->
-  <div class="flex gap-2 mb-6" role="tablist" id="platform-tabs">
-    <button class="btn btn-sm btn-active" data-platform="web" role="tab" aria-selected="true">Web</button>
-    <button class="btn btn-sm btn-ghost" data-platform="youtube" role="tab" aria-selected="false">YouTube</button>
-    <button class="btn btn-sm btn-ghost" data-platform="reddit" role="tab" aria-selected="false">Reddit</button>
-  </div>
-
-  <!-- Platform hint -->
-  <div id="platform-hint" class="text-sm text-base-content/60 mb-4 hidden"></div>
-
   <!-- Form Card -->
   <div class="card bg-base-200">
     <div class="card-body">
