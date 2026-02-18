@@ -6,8 +6,18 @@
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 60
+    },
+    "api/cron/scheduler.ts": {
+      "memory": 1024,
+      "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/scheduler",
+      "schedule": "* * * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
   ]
