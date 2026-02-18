@@ -220,10 +220,10 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
 // GET / - List all feeds
 feedsApiRouter.get('/', async (_req: Request, res: Response): Promise<void> => {
   try {
-    // Query all feeds
+    // Query all feeds including scheduling fields
     const { data: feeds, error } = await supabase
       .from('feeds')
-      .select('id, slug, name, url, created_at, updated_at')
+      .select('id, slug, name, url, created_at, updated_at, refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -246,8 +246,13 @@ feedsApiRouter.get('/', async (_req: Request, res: Response): Promise<void> => {
           name: feed.name,
           url: feed.url,
           itemCount: count || 0,
+          updated_at: feed.updated_at,
           createdAt: feed.created_at,
           updatedAt: feed.updated_at,
+          refresh_interval_minutes: feed.refresh_interval_minutes ?? null,
+          next_refresh_at: feed.next_refresh_at ?? null,
+          refresh_status: (feed.refresh_status as string) || 'idle',
+          last_refresh_error: feed.last_refresh_error ?? null,
         };
       })
     );
