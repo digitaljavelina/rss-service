@@ -11,16 +11,16 @@
 ## Current Position
 
 **Phase:** 5 of 6 (Automation & Scheduling) - In progress
-**Plan:** 2 of 5 in phase (complete)
+**Plan:** 4 of 5 in phase (complete)
 **Status:** In progress
-**Last activity:** 2026-02-18 - Completed 05-02-PLAN.md (Vercel cron job for feed scheduling)
+**Last activity:** 2026-02-18 - Completed 05-04-PLAN.md (Dashboard refresh timing display)
 
-**Progress:** ██████████░░░░░░░░░░ 50% (18/36 plans)
+**Progress:** ████████████░░░░░░░░ 61% (22/36 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
 Phase 3: ██████████ 100% (4/4 plans)
 Phase 4: ██████████ 100% (3/3 plans)
-Phase 5: ████░░░░░░ 40% (2/5 plans)
+Phase 5: ████████░░ 80% (4/5 plans)
 
 ---
 
@@ -41,7 +41,7 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 
 ## Performance Metrics
 
-**Milestone:** Phase 5 Plan 02 complete - Vercel cron job for feed scheduling deployed
+**Milestone:** Phase 5 Plan 04 complete - Dashboard displays refresh timing (Last Updated, Next Refresh, Status)
 **Velocity:** 18 plans completed
 **Rework Rate:** 0%
 
@@ -117,6 +117,8 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 | Remove selector adjustment UI | Most users won't understand CSS selectors; keep detection automatic | 2026-02-18 |
 | Automatic headless browser | No manual toggle; system detects JS-heavy pages and retries with headless automatically | 2026-02-18 |
 | Manual SQL migration for schema changes | Supabase SQL Editor used directly; consistent with original schema creation approach | 2026-02-18 |
+| Default refresh interval = Every hour | 60 min default on create feed form balances freshness and server load | 2026-02-18 |
+| hasOwnProperty check in PUT for interval | Allows partial PUT updates without accidentally clearing refresh interval | 2026-02-18 |
 | refresh_status defaults to 'idle' | Safe default for existing rows; no backfill required after column addition | 2026-02-18 |
 | NULL refresh_interval_minutes = manual only | Explicit nullable design avoids sentinel integers for manual-only refresh | 2026-02-18 |
 | TIMESTAMPTZ for next_refresh_at | Timezone-aware scheduling ensures correct behavior across server regions | 2026-02-18 |
@@ -124,6 +126,10 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 | MAX_FEEDS_PER_RUN = 5 | Caps per-cron feed count to stay within 60s serverless timeout | 2026-02-18 |
 | next_refresh_at updates on error | Prevents tight retry loops on persistently failing feeds | 2026-02-18 |
 | refresh_status locking | Marks feeds 'refreshing' before work to prevent concurrent cron overlap | 2026-02-18 |
+| timeAgo for Last Updated | Relative time (e.g., "5 min ago") more scannable than absolute dates in dashboard | 2026-02-18 |
+| timeUntil null = "Manual" | next_refresh_at=null displayed as "Manual" to clearly indicate no auto-schedule | 2026-02-18 |
+| Idle shown as text not badge | Only actionable states (refreshing/error) get badges; idle is subtle text to reduce noise | 2026-02-18 |
+| Error tooltip via title attr | Native browser tooltip for error details on hover; no JS library needed | 2026-02-18 |
 
 ### Open Questions
 
@@ -133,9 +139,7 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 ### Active Todos
 
 - Add CRON_SECRET to Vercel Dashboard environment variables (openssl rand -hex 32)
-- Execute Plan 05-03 (feed settings UI for refresh interval)
-- Execute Plan 05-04 (API routes for scheduling)
-- Execute Plan 05-05 (verification)
+- Execute Plan 05-05 (verification of complete scheduling system)
 
 ### Known Blockers
 
@@ -150,7 +154,7 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 ## Session Continuity
 
 **Last Session:** 2026-02-18
-**Stopped at:** Completed 05-02-PLAN.md (Vercel cron job for feed scheduling)
+**Stopped at:** Completed 05-04-PLAN.md (Dashboard refresh timing display)
 **Resume file:** None
 
 **Context for Next Session:**
@@ -166,10 +170,14 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 - Vercel config: memory 1024MB, maxDuration 60s for both api/index.ts and api/cron/scheduler.ts
 - Cron job: api/cron/scheduler.ts - runs every minute, queries next_refresh_at, uses refresh_status lock
 - CRON_SECRET: must be added to Vercel Dashboard before cron job will authenticate
+- Dashboard: 6-column table (Feed Name, Items, Last Updated, Next Refresh, Status, Actions)
+- Dashboard JS: timeAgo(), timeUntil() helpers; refresh_status badges (idle/refreshing/error with tooltip)
+- GET /api/feeds: returns refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error
+- Create/Edit feed forms: include refresh interval dropdown (05-03 plan)
 
 **Next Steps:**
 1. Add CRON_SECRET to Vercel Dashboard environment variables
-2. Plan 05-03: Feed settings UI for refresh interval configuration
+2. Plan 05-05: End-to-end verification of the complete scheduling system
 
 ---
 
@@ -208,4 +216,4 @@ Phase 5: ████░░░░░░ 40% (2/5 plans)
 
 ---
 
-*Last updated: 2026-02-18 (after 05-02 completion)*
+*Last updated: 2026-02-18 (after 05-03 completion - feed refresh interval UI)*
