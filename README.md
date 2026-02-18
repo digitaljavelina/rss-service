@@ -1,6 +1,6 @@
 # RSS Service
 
-Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
+Create RSS feeds from anything. Point at any URL — website, YouTube channel, or subreddit — and get a feed you can subscribe to in your reader.
 
 ## Live Demo
 
@@ -9,22 +9,21 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 ## Features
 
 - **URL to RSS** - Turn any webpage into an RSS feed
-- **Auto-Detection** - Automatically finds content patterns (articles, lists, links)
-- **Automatic JS Rendering** - Automatically uses headless browser for JavaScript-heavy sites (SPAs, React apps)
+- **YouTube Feeds** - Create feeds from YouTube channels and playlists (auto-detected from URL)
+- **Reddit Feeds** - Create feeds from subreddits and user pages (auto-detected from URL)
+- **Auto-Detection** - Automatically finds content patterns and detects platform type
+- **Automatic JS Rendering** - Uses headless browser for JavaScript-heavy sites (SPAs, React apps)
 - **Preview Before Save** - See what you'll get before creating the feed
 - **Multiple Formats** - RSS 2.0 and Atom support
-- **Feed Dashboard** - View all feeds with status, item count, and last updated time
+- **Feed Dashboard** - View all feeds with platform badges, item count, and refresh status
 - **Edit Feeds** - Update feed name, URL, or selectors with automatic re-detection
 - **Delete Feeds** - Remove feeds with confirmation dialog
-- **Manual Refresh** - Update individual feeds on demand with single-row updates
-- **Auto-Refresh** - Feeds update automatically on configurable schedules (15min, 30min, hourly, daily)
-- **Refresh Status** - Dashboard shows last updated time, next refresh, and status for each feed
+- **Manual Refresh** - Update individual feeds on demand
+- **Auto-Refresh** - Configurable schedules (15min, 30min, hourly, 6hr, daily)
 - **Export/Import** - Download feed configs as JSON for backup, restore from JSON files
 - **XML Export** - Download feeds as static RSS or Atom XML files
 - **Content Deduplication** - SHA-256 based GUIDs prevent duplicate items
-- **YouTube Feeds** - Create feeds from YouTube channels and playlists via Data API v3
-- **Reddit Feeds** - Create feeds from subreddits and user pages via built-in RSS
-- **Settings Page** - Manage API keys (YouTube) with save, test, and remove
+- **Settings Page** - Manage YouTube API key with save, test, and remove
 - **Dark Mode** - Light and dark theme with persistence
 
 ## Tech Stack
@@ -42,6 +41,7 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 - Node.js 18+
 - npm
 - Supabase account (for database)
+- YouTube Data API v3 key (optional, for YouTube feeds)
 
 ### Installation
 
@@ -128,6 +128,17 @@ CREATE POLICY "Allow all on items" ON items FOR ALL USING (true) WITH CHECK (tru
 CREATE POLICY "Allow all on settings" ON settings FOR ALL USING (true) WITH CHECK (true);
 ```
 
+### YouTube Setup
+
+YouTube feeds require a Data API v3 key:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project and enable the **YouTube Data API v3**
+3. Create an API key under **Credentials**
+4. In the app, go to **Settings** and save your API key
+
+Reddit feeds work out of the box — no API key needed.
+
 ### Development
 
 ```bash
@@ -157,10 +168,7 @@ Content-Type: application/json
 }
 ```
 
-Auto-detects content and returns extracted items for preview. Automatically uses headless browser for JavaScript-heavy sites.
-
-**Response includes:**
-- `usedHeadless`: `true` if headless browser was used
+Auto-detects content and returns extracted items for preview. Supports web pages, YouTube channels/playlists, and Reddit subreddits/users. Automatically uses headless browser for JavaScript-heavy sites.
 
 ### Create Feed
 
@@ -171,11 +179,11 @@ Content-Type: application/json
 {
   "name": "My Feed",
   "url": "https://example.com",
-  "refresh_interval_minutes": 60   // Optional: 15, 30, 60, 1440, or null for manual only
+  "refresh_interval_minutes": 60
 }
 ```
 
-Creates a new feed with auto-detected selectors. If `refresh_interval_minutes` is provided, `next_refresh_at` is set automatically.
+Creates a new feed. Platform type (web, youtube, reddit) is auto-detected from the URL. If `refresh_interval_minutes` is provided, `next_refresh_at` is set automatically.
 
 ### List Feeds
 
@@ -183,11 +191,7 @@ Creates a new feed with auto-detected selectors. If `refresh_interval_minutes` i
 GET /api/feeds
 ```
 
-Returns all feeds with item counts and refresh timing:
-- `refresh_interval_minutes`: How often the feed auto-refreshes (null = manual only)
-- `next_refresh_at`: ISO 8601 timestamp of next scheduled refresh (null = manual only)
-- `refresh_status`: Current status — `idle`, `refreshing`, or `error`
-- `last_refresh_error`: Error message from last failed refresh (null if no error)
+Returns all feeds with item counts, refresh timing, and `feed_type`.
 
 ### Get Feed (JSON)
 
@@ -195,7 +199,7 @@ Returns all feeds with item counts and refresh timing:
 GET /api/feeds/:id
 ```
 
-Returns feed details and items as JSON.
+Returns feed details, items, `feedType`, and `platformConfig` as JSON.
 
 ### Get Feed (RSS/Atom)
 
@@ -214,11 +218,11 @@ Content-Type: application/json
 {
   "name": "Updated Name",
   "url": "https://example.com/new",
-  "refresh_interval_minutes": 30   // Optional: 15, 30, 60, 1440, or null for manual only
+  "refresh_interval_minutes": 30
 }
 ```
 
-Updates feed configuration. If URL changes, items are cleared and re-fetched. Response includes `urlChanged: true` when URL was modified. If `refresh_interval_minutes` changes, `next_refresh_at` is recalculated.
+Updates feed configuration. If URL changes, items are cleared and re-fetched. Response includes `urlChanged: true` when URL was modified.
 
 ### Delete Feed
 
@@ -234,16 +238,17 @@ Permanently removes feed and all associated items.
 POST /api/feeds/:id/refresh
 ```
 
-Manually refresh a feed to check for new content. Uses content-based deduplication to avoid duplicates.
+Manually refresh a feed to check for new content. Routes to the correct service based on feed type (web scraping, YouTube API, or Reddit RSS).
 
-### Cron Scheduler (Internal)
+### Settings
 
 ```
-GET /api/cron/scheduler
-Authorization: Bearer <CRON_SECRET>
+GET /api/settings              # List all settings (values masked)
+PUT /api/settings/:key         # Save a setting
+DELETE /api/settings/:key      # Remove a setting
 ```
 
-Called automatically by Vercel Cron once daily (midnight UTC on Hobby plan). Finds feeds whose `next_refresh_at` is in the past, refreshes up to 5 per run, and updates `next_refresh_at` for the next cycle. Self-hosted deployments can trigger this endpoint at any frequency. Requires `CRON_SECRET` environment variable.
+Used for managing API keys (e.g., `youtube_api_key`). Sensitive values are masked in GET responses.
 
 ### Export Feed (XML)
 
@@ -252,31 +257,35 @@ GET /api/feeds/:id/export?format=rss
 GET /api/feeds/:id/export?format=atom
 ```
 
-Download feed as XML file with `Content-Disposition` header for browser download.
+Download feed as XML file.
 
-**Response Headers:**
-- `Content-Type: application/rss+xml` or `application/atom+xml`
-- `Cache-Control: public, max-age=300`
-- `ETag: "..."` for cache validation
+### Cron Scheduler (Internal)
+
+```
+GET /api/cron/scheduler
+Authorization: Bearer <CRON_SECRET>
+```
+
+Called automatically by Vercel Cron. Refreshes due feeds (up to 5 per run) across all feed types. Requires `CRON_SECRET` environment variable.
 
 ## Pages
 
 | Route | Description |
 |-------|-------------|
 | `/` | Home page |
-| `/feeds/new` | Create a new feed (URL + preview + save) |
+| `/create` | Create a new feed (URL + preview + save) |
 | `/feeds` | Dashboard — list all feeds with actions |
 | `/feeds/:slug/edit` | Edit feed configuration |
 | `/settings` | Settings — API key management |
 | `/feeds/:slug` | RSS/Atom feed output |
 
-## Deployment Notes
+## Deployment
 
 The Vercel deployment is configured with:
 - **Memory:** 1024 MB (for headless browser)
 - **Max Duration:** 60 seconds (for browser-based fetching)
 
-### Auto-Refresh Setup (Phase 5)
+### Auto-Refresh Setup
 
 Vercel Cron triggers the scheduler on a schedule configured in `vercel.json`. To enable auto-refresh in production:
 
@@ -284,17 +293,6 @@ Vercel Cron triggers the scheduler on a schedule configured in `vercel.json`. To
 2. Add `CRON_SECRET` to your Vercel Dashboard environment variables
 3. Vercel Hobby plan limits cron to once per day (`0 0 * * *`). Upgrade to Pro for higher frequency.
 4. **Self-hosted** (Docker, launchd, etc.) can call `/api/cron/scheduler` at any frequency with no limits
-
-## Project Status
-
-| Phase | Status |
-|-------|--------|
-| 1. Foundation & Setup | ✅ Complete |
-| 2. Core Feed Creation | ✅ Complete |
-| 3. Feed Management | ✅ Complete |
-| 4. Advanced Extraction | ✅ Complete |
-| 5. Automation & Scheduling | ✅ Complete |
-| 6. Platform Integrations | ✅ Complete |
 
 ## License
 
