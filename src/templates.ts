@@ -290,6 +290,20 @@ export const pages: Record<string, string> = {
         <input type="text" id="feed-name" placeholder="Hacker News" class="input input-bordered" required />
       </div>
 
+      <div class="form-control mt-4">
+        <label class="label">
+          <span class="label-text">Auto-refresh interval</span>
+        </label>
+        <select id="refresh-interval" class="select select-bordered">
+          <option value="">Manual only</option>
+          <option value="15">Every 15 minutes</option>
+          <option value="30">Every 30 minutes</option>
+          <option value="60" selected>Every hour</option>
+          <option value="360">Every 6 hours</option>
+          <option value="1440">Daily</option>
+        </select>
+      </div>
+
       <!-- Action Buttons -->
       <div class="flex gap-4 mt-6">
         <button id="btn-preview" class="btn btn-outline flex-1">

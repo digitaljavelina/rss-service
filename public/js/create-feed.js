@@ -7,6 +7,7 @@
   // DOM element references
   const feedName = document.getElementById('feed-name');
   const sourceUrl = document.getElementById('source-url');
+  const refreshInterval = document.getElementById('refresh-interval');
   const btnPreview = document.getElementById('btn-preview');
   const btnSave = document.getElementById('btn-save');
   const previewSection = document.getElementById('preview-section');
@@ -153,6 +154,7 @@
   function disableForm() {
     feedName.disabled = true;
     sourceUrl.disabled = true;
+    if (refreshInterval) refreshInterval.disabled = true;
     btnPreview.disabled = true;
     btnSave.disabled = true;
   }
@@ -229,11 +231,14 @@
     const name = feedName.value.trim() || lastPreviewData.metadata?.pageTitle || 'Untitled Feed';
     // Pass along whether headless was used during preview
     const usedHeadless = lastPreviewData.usedHeadless === true;
+    // Parse refresh interval (empty string = manual only = null)
+    const intervalValue = refreshInterval ? refreshInterval.value : '';
+    const refreshIntervalMinutes = intervalValue ? parseInt(intervalValue, 10) : null;
 
     setLoading(btnSave, true);
 
     try {
-      const body = { name, url, useHeadless: usedHeadless };
+      const body = { name, url, useHeadless: usedHeadless, refresh_interval_minutes: refreshIntervalMinutes };
 
       const response = await fetch('/api/feeds', {
         method: 'POST',
