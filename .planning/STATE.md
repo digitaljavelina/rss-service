@@ -4,23 +4,23 @@
 
 **Core Value:** Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
 
-**Current Focus:** Phase 4 Complete - Ready for Phase 5 (Automation & Scheduling)
+**Current Focus:** Phase 5 In Progress - Cron scheduler deployed, need CRON_SECRET + feed settings UI
 
 ---
 
 ## Current Position
 
 **Phase:** 5 of 6 (Automation & Scheduling) - In progress
-**Plan:** 1 of 5 in phase (complete)
+**Plan:** 2 of 5 in phase (complete)
 **Status:** In progress
-**Last activity:** 2026-02-18 - Completed 05-01-PLAN.md (database schema for scheduling)
+**Last activity:** 2026-02-18 - Completed 05-02-PLAN.md (Vercel cron job for feed scheduling)
 
-**Progress:** ██████████░░░░░░░░░░ 47% (17/36 plans)
+**Progress:** ██████████░░░░░░░░░░ 50% (18/36 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
 Phase 3: ██████████ 100% (4/4 plans)
 Phase 4: ██████████ 100% (3/3 plans)
-Phase 5: ██░░░░░░░░ 20% (1/5 plans)
+Phase 5: ████░░░░░░ 40% (2/5 plans)
 
 ---
 
@@ -32,17 +32,17 @@ Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 | 2 | Core Feed Creation | Complete | 7 | 5/5 | 100% |
 | 3 | Feed Management | Complete | 8 | 4/4 | 100% |
 | 4 | Advanced Extraction | Complete | 3 | 3/3 | 100% |
-| 5 | Automation & Scheduling | In Progress | 4 | 1/5 | 20% |
+| 5 | Automation & Scheduling | In Progress | 4 | 2/5 | 40% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 17/36 plans completed (47%)
+**Overall Progress:** 18/36 plans completed (50%)
 
 ---
 
 ## Performance Metrics
 
-**Milestone:** Phase 5 started - scheduling database schema complete
-**Velocity:** 17 plans completed
+**Milestone:** Phase 5 Plan 02 complete - Vercel cron job for feed scheduling deployed
+**Velocity:** 18 plans completed
 **Rework Rate:** 0%
 
 **Quality Indicators:**
@@ -120,6 +120,10 @@ Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 | refresh_status defaults to 'idle' | Safe default for existing rows; no backfill required after column addition | 2026-02-18 |
 | NULL refresh_interval_minutes = manual only | Explicit nullable design avoids sentinel integers for manual-only refresh | 2026-02-18 |
 | TIMESTAMPTZ for next_refresh_at | Timezone-aware scheduling ensures correct behavior across server regions | 2026-02-18 |
+| CRON_SECRET via Authorization header | Vercel auto-injects secret; handler checks header and returns 401 for unauthorized requests | 2026-02-18 |
+| MAX_FEEDS_PER_RUN = 5 | Caps per-cron feed count to stay within 60s serverless timeout | 2026-02-18 |
+| next_refresh_at updates on error | Prevents tight retry loops on persistently failing feeds | 2026-02-18 |
+| refresh_status locking | Marks feeds 'refreshing' before work to prevent concurrent cron overlap | 2026-02-18 |
 
 ### Open Questions
 
@@ -128,7 +132,7 @@ Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 
 ### Active Todos
 
-- Execute Plan 05-02 (cron job runner)
+- Add CRON_SECRET to Vercel Dashboard environment variables (openssl rand -hex 32)
 - Execute Plan 05-03 (feed settings UI for refresh interval)
 - Execute Plan 05-04 (API routes for scheduling)
 - Execute Plan 05-05 (verification)
@@ -146,7 +150,7 @@ Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 ## Session Continuity
 
 **Last Session:** 2026-02-18
-**Stopped at:** Completed 05-01-PLAN.md (database schema for scheduling)
+**Stopped at:** Completed 05-02-PLAN.md (Vercel cron job for feed scheduling)
 **Resume file:** None
 
 **Context for Next Session:**
@@ -159,10 +163,13 @@ Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 - REFRESH_INTERVALS constant exported from src/types/feed.ts
 - Auto-detection service: autoDetectSelectors(), autoExtractItems()
 - Headless browser infrastructure: page-fetcher-browser.ts with fetchPageWithBrowser()
-- Vercel config: memory 1024MB, maxDuration 60s
+- Vercel config: memory 1024MB, maxDuration 60s for both api/index.ts and api/cron/scheduler.ts
+- Cron job: api/cron/scheduler.ts - runs every minute, queries next_refresh_at, uses refresh_status lock
+- CRON_SECRET: must be added to Vercel Dashboard before cron job will authenticate
 
 **Next Steps:**
-1. Plan 05-02: Cron job runner for scheduled feed refreshes
+1. Add CRON_SECRET to Vercel Dashboard environment variables
+2. Plan 05-03: Feed settings UI for refresh interval configuration
 
 ---
 
@@ -201,4 +208,4 @@ Phase 5: ██░░░░░░░░ 20% (1/5 plans)
 
 ---
 
-*Last updated: 2026-02-18 (after 05-01 completion)*
+*Last updated: 2026-02-18 (after 05-02 completion)*
