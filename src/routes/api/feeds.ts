@@ -29,12 +29,23 @@ interface CreateFeedRequest {
   url: string;
   selectors?: Partial<FeedSelectors>; // Now optional - auto-detect if not provided
   useHeadless?: boolean; // Use headless browser for JS-heavy sites
+  refresh_interval_minutes?: number | null; // Auto-refresh interval in minutes; null = manual only
   items?: Array<{
     title: string;
     link: string;
     description?: string | null;
     pubDate?: string | null;
   }>;
+}
+
+/**
+ * Calculate next_refresh_at from an interval in minutes.
+ * Returns ISO string or null if interval is null/undefined.
+ */
+function calculateNextRefreshAt(intervalMinutes: number | null | undefined): string | null {
+  if (intervalMinutes == null || intervalMinutes <= 0) return null;
+  const next = new Date(Date.now() + intervalMinutes * 60 * 1000);
+  return next.toISOString();
 }
 
 /**
@@ -122,6 +133,12 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       ? { ...extraction.selectors, useHeadless: true }
       : extraction.selectors;
 
+    // Determine refresh interval and next refresh time
+    const refreshIntervalMinutes = body.refresh_interval_minutes != null
+      ? Number(body.refresh_interval_minutes)
+      : null;
+    const nextRefreshAt = calculateNextRefreshAt(refreshIntervalMinutes);
+
     const { error: insertError } = await supabase.from('feeds').insert({
       id: feedId,
       slug: slug,
@@ -129,6 +146,8 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       url: body.url,
       selectors: JSON.stringify(selectorsWithHeadless),
       item_limit: 100,
+      refresh_interval_minutes: refreshIntervalMinutes,
+      next_refresh_at: nextRefreshAt,
     });
 
     if (insertError) {
@@ -309,6 +328,9 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
       feedUrl: `${baseUrl}/feeds/${feedRow.slug}`,
       createdAt: feedRow.created_at,
       updatedAt: feedRow.updated_at,
+      refreshIntervalMinutes: feedRow.refresh_interval_minutes ?? null,
+      nextRefreshAt: feedRow.next_refresh_at ?? null,
+      refreshStatus: feedRow.refresh_status || 'idle',
     };
 
     // Include items if requested (for full export)
@@ -483,12 +505,12 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
   }
 });
 
-// PUT /:id - Update feed name, url, and/or item limit
+// PUT /:id - Update feed name, url, item limit, and/or refresh interval
 feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
 
   try {
-    const body = req.body as { name?: string; url?: string; itemLimit?: number };
+    const body = req.body as { name?: string; url?: string; itemLimit?: number; refresh_interval_minutes?: number | null };
     const errors: string[] = [];
 
     // Validate name
@@ -542,6 +564,15 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
     const newUrl = body.url !== undefined ? body.url.trim() : feedRow.url;
     const urlChanged = newUrl !== feedRow.url;
 
+    // Determine new refresh interval
+    // If the key is present in body, use it (allows explicit null for manual-only)
+    // Otherwise preserve existing value from DB
+    const hasIntervalInBody = Object.prototype.hasOwnProperty.call(body, 'refresh_interval_minutes');
+    const newRefreshIntervalMinutes = hasIntervalInBody
+      ? (body.refresh_interval_minutes != null ? Number(body.refresh_interval_minutes) : null)
+      : feedRow.refresh_interval_minutes;
+    const newNextRefreshAt = calculateNextRefreshAt(newRefreshIntervalMinutes);
+
     // Parse existing selectors to check for useHeadless flag
     let existingSelectors: Partial<FeedSelectors> & { useHeadless?: boolean } | undefined;
     try {
@@ -554,6 +585,8 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
     let updateData: Record<string, unknown> = {
       name,
       item_limit: itemLimit,
+      refresh_interval_minutes: newRefreshIntervalMinutes,
+      next_refresh_at: newNextRefreshAt,
       updated_at: new Date().toISOString(),
     };
 
@@ -646,6 +679,8 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
       feedUrl: `${baseUrl}/feeds/${updated.slug}`,
       updatedAt: updated.updated_at,
       urlChanged,
+      refreshIntervalMinutes: updated.refresh_interval_minutes ?? null,
+      nextRefreshAt: updated.next_refresh_at ?? null,
     });
   } catch (error) {
     console.error('Update feed error:', error);
