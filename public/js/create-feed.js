@@ -18,8 +18,64 @@
   const successSection = document.getElementById('success-section');
   const feedUrlLink = document.getElementById('feed-url-link');
 
+  // Platform tab elements
+  const platformTabs = document.getElementById('platform-tabs');
+  const platformHint = document.getElementById('platform-hint');
+  const urlHelp = document.getElementById('url-help');
+
   // Store preview data for save
   let lastPreviewData = null;
+  let selectedPlatform = 'web';
+
+  // Platform tab config
+  var platformConfig = {
+    web: { placeholder: 'https://news.ycombinator.com', hint: '', help: 'Any website with articles, blog posts, or listings' },
+    youtube: { placeholder: 'https://www.youtube.com/@ChannelName', hint: 'Requires a YouTube API key (configure in Settings)', help: 'Channel URL, @handle, or playlist URL' },
+    reddit: { placeholder: 'https://www.reddit.com/r/technology', hint: 'Uses Reddit\'s built-in RSS — no API key needed', help: 'Subreddit URL like /r/name or user URL like /u/name' },
+  };
+
+  // Platform tab switching
+  if (platformTabs) {
+    platformTabs.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-platform]');
+      if (!btn) return;
+      var platform = btn.getAttribute('data-platform');
+      if (!platform || platform === selectedPlatform) return;
+
+      selectedPlatform = platform;
+
+      // Update active tab styles
+      var tabs = platformTabs.querySelectorAll('[data-platform]');
+      tabs.forEach(function(tab) {
+        if (tab.getAttribute('data-platform') === platform) {
+          tab.className = 'btn btn-sm btn-active';
+          tab.setAttribute('aria-selected', 'true');
+        } else {
+          tab.className = 'btn btn-sm btn-ghost';
+          tab.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      // Update URL input and hints
+      var config = platformConfig[platform] || platformConfig.web;
+      sourceUrl.placeholder = config.placeholder;
+      if (urlHelp) urlHelp.textContent = config.help;
+      if (platformHint) {
+        if (config.hint) {
+          platformHint.textContent = config.hint;
+          platformHint.classList.remove('hidden');
+        } else {
+          platformHint.classList.add('hidden');
+        }
+      }
+
+      // Reset preview when switching platforms
+      previewSection.classList.add('hidden');
+      previewErrors.classList.add('hidden');
+      lastPreviewData = null;
+      btnSave.disabled = true;
+    });
+  }
 
   /**
    * Toggle loading state on a button
@@ -201,6 +257,15 @@
       // Store for save (including whether headless was used)
       lastPreviewData = result;
 
+      // Auto-select platform tab if preview detected a platform
+      if (result.platformInfo && result.platformInfo.feedType && platformTabs) {
+        var detected = result.platformInfo.feedType;
+        if (detected !== selectedPlatform) {
+          var tabBtn = platformTabs.querySelector('[data-platform="' + detected + '"]');
+          if (tabBtn) tabBtn.click();
+        }
+      }
+
       // Render preview
       renderPreview(result);
 
@@ -239,6 +304,11 @@
 
     try {
       const body = { name, url, useHeadless: usedHeadless, refresh_interval_minutes: refreshIntervalMinutes };
+
+      // Pass platform info from preview response (YouTube/Reddit)
+      if (lastPreviewData.platformInfo) {
+        body.platformInfo = lastPreviewData.platformInfo;
+      }
 
       const response = await fetch('/api/feeds', {
         method: 'POST',

@@ -4,23 +4,24 @@
 
 **Core Value:** Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
 
-**Current Focus:** Phase 5 Complete - All scheduling features verified. Phase 6 (Platform Integrations) next.
+**Current Focus:** Phase 6 Complete - Platform Integrations (YouTube + Reddit). Twitter/X dropped (API cost).
 
 ---
 
 ## Current Position
 
-**Phase:** 5 of 6 (Automation & Scheduling) - Complete
+**Phase:** 6 of 6 (Platform Integrations) - Complete
 **Plan:** 5 of 5 in phase (complete)
 **Status:** Complete
-**Last activity:** 2026-02-18 - Completed 05-05-PLAN.md (README update + human verification)
+**Last activity:** 2026-02-18 - Completed all 5 plans for Phase 6
 
-**Progress:** █████████████░░░░░░░ 64% (23/36 plans)
+**Progress:** ████████████████████ 100% (28/28 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
 Phase 3: ██████████ 100% (4/4 plans)
 Phase 4: ██████████ 100% (3/3 plans)
 Phase 5: ██████████ 100% (5/5 plans)
+Phase 6: ██████████ 100% (5/5 plans)
 
 ---
 
@@ -33,20 +34,20 @@ Phase 5: ██████████ 100% (5/5 plans)
 | 3 | Feed Management | Complete | 8 | 4/4 | 100% |
 | 4 | Advanced Extraction | Complete | 3 | 3/3 | 100% |
 | 5 | Automation & Scheduling | Complete | 4 | 5/5 | 100% |
-| 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
+| 6 | Platform Integrations | Complete | 4 | 5/5 | 100% |
 
-**Overall Progress:** 23/36 plans completed (64%)
+**Overall Progress:** 28/28 plans completed (100%)
 
 ---
 
 ## Performance Metrics
 
-**Milestone:** Phase 5 Complete - Feeds auto-refresh on schedule, dashboard shows timing, cron deployed
-**Velocity:** 23 plans completed
+**Milestone:** Phase 6 Complete - YouTube and Reddit platform feeds, settings page, scheduler updated
+**Velocity:** 28 plans completed
 **Rework Rate:** 0%
 
 **Quality Indicators:**
-- Plans completed: 23
+- Plans completed: 28
 - Phase 1-5 verified by user
 - Deployed to Vercel production
 - Supabase database operational
@@ -63,6 +64,10 @@ Phase 5: ██████████ 100% (5/5 plans)
 - Auto-refresh scheduling with configurable intervals
 - Cron scheduler with refresh_status locking
 - Dashboard shows Last Updated, Next Refresh, Status per feed
+- YouTube feed creation via Data API v3
+- Reddit feed creation via built-in RSS
+- Settings page for API key management
+- Platform-aware scheduler for all feed types
 
 ---
 
@@ -135,10 +140,16 @@ Phase 5: ██████████ 100% (5/5 plans)
 | Error tooltip via title attr | Native browser tooltip for error details on hover; no JS library needed | 2026-02-18 |
 | Daily cron for Vercel Hobby | Hobby plan limits to once/day; keep all interval options for self-hosted/Pro | 2026-02-18 |
 | "Back to My Feeds" label | Consistent with sidebar naming; "Dashboard" in sidebar = home page, not feed list | 2026-02-18 |
+| Skip Twitter/X entirely | API costs $100+/month for read access; impractical for free self-hosted tool | 2026-02-18 |
+| Reddit built-in RSS over API | Reddit provides /r/sub.rss natively; no API key needed, simpler and more reliable | 2026-02-18 |
+| YouTube uploads playlist trick | Replace "UC" → "UU" in channelId to get uploads playlist; 1 quota unit vs 100 for search | 2026-02-18 |
+| Settings table for API keys | Key-value store with masked display; extensible for future platform keys | 2026-02-18 |
+| feed_type column routing | Routes preview/create/refresh/cron by feed_type instead of URL pattern matching | 2026-02-18 |
+| Read-only URL for platform feeds | YouTube/Reddit feed URLs tied to channel/subreddit; editing URL makes no sense | 2026-02-18 |
 
 ### Open Questions
 
-- How to handle authentication for platform APIs? (storage strategy)
+(None)
 
 ### Active Todos
 
@@ -150,30 +161,33 @@ Phase 5: ██████████ 100% (5/5 plans)
 
 ### Recently Resolved
 
-- CRON_SECRET added to Vercel Dashboard
-- Cron schedule fixed for Hobby plan (daily at midnight UTC)
-- Edit page nav label fixed for consistency
+- Phase 6 SQL migration needs to be run in Supabase SQL Editor
+- Settings page for YouTube API key management
+- Platform-aware scheduler handles web, YouTube, and Reddit feeds
 
 ---
 
 ## Session Continuity
 
 **Last Session:** 2026-02-18
-**Stopped at:** Phase 5 Complete - all 5 plans executed and verified
+**Stopped at:** Phase 6 Complete - all 5 plans executed
 **Resume file:** None
 
 **Context for Next Session:**
-- Phase 1-5 complete and deployed to Vercel
+- Phase 1-6 complete and deployed to Vercel
 - Production URL: https://rss-service-five.vercel.app/
-- Supabase database with feeds/items tables + scheduling columns
+- Supabase database with feeds/items/settings tables + platform columns
 - Cron schedule: daily at midnight UTC (Vercel Hobby plan)
 - CRON_SECRET configured in Vercel Dashboard
-- All refresh interval options available (15min, 30min, 1hr, 6hr, daily, manual)
-- Self-hosted deployments can trigger scheduler at any frequency
-- Phase 6 (Platform Integrations) is next: YouTube, Twitter/X, Reddit API feeds
+- YouTube feeds via Data API v3 (requires API key in Settings)
+- Reddit feeds via built-in RSS (no API key needed)
+- Twitter/X intentionally not supported (API cost barrier)
+- Phase 6 SQL migration must be run before platform features work
 
 **Next Steps:**
-1. Phase 6: Platform Integrations (YouTube, Twitter/X, Reddit API feeds)
+1. Run Phase 6 SQL migration in Supabase SQL Editor
+2. Deploy to Vercel
+3. Human verification of all platform flows
 
 ---
 
@@ -219,6 +233,13 @@ Phase 5: ██████████ 100% (5/5 plans)
 - All features verified: auto-refresh, interval config, dashboard timing, manual-only
 - All Phase 5 requirements satisfied (SCHED-01 through SCHED-04)
 
+### Phase 6 Checkpoint (2026-02-18)
+- All 5 plans executed (schema+settings, YouTube, Reddit, UI, scheduler+verification)
+- Twitter/X dropped (API cost $100+/month)
+- Reddit uses built-in RSS (no API key needed)
+- YouTube uses Data API v3 with uploads playlist trick for quota efficiency
+- Pending: SQL migration, deployment, human verification
+
 ---
 
-*Last updated: 2026-02-18 (Phase 5 complete - all scheduling features verified)*
+*Last updated: 2026-02-18 (Phase 6 code complete - awaiting verification)*

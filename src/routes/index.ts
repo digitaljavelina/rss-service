@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { previewRouter } from './api/preview.js';
 import { feedsApiRouter } from './api/feeds.js';
+import { settingsApiRouter } from './api/settings.js';
 import { feedsRouter } from './feeds.js';
 import { uiRouter } from './ui.js';
 
@@ -10,6 +11,7 @@ export const router = Router();
 // Mount API routes first (most specific)
 router.use('/api/preview', previewRouter);
 router.use('/api/feeds', feedsApiRouter);
+router.use('/api/settings', settingsApiRouter);
 
 // Mount UI routes before feed XML routes
 // UI routes handle /feeds (dashboard) and /feeds/:slug/edit (edit page)

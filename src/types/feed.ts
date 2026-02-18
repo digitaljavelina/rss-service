@@ -44,8 +44,31 @@ export interface FetchResult {
 }
 
 /**
+ * Feed source type: web scraping, YouTube API, or Reddit RSS
+ */
+export type FeedType = 'web' | 'youtube' | 'reddit';
+
+/**
+ * Platform-specific configuration stored as JSON in feeds.platform_config
+ */
+export interface YouTubePlatformConfig {
+  channelId: string;
+  playlistId: string;
+  channelTitle?: string;
+}
+
+export interface RedditPlatformConfig {
+  subreddit?: string;
+  username?: string;
+  sort?: string;
+  feedUrl: string;
+}
+
+export type PlatformConfig = YouTubePlatformConfig | RedditPlatformConfig | Record<string, never>;
+
+/**
  * Database row for the feeds table
- * Includes all columns: core fields + scheduling fields added in Phase 5
+ * Includes all columns: core fields + scheduling (Phase 5) + platform (Phase 6)
  */
 export interface FeedRow {
   id: string;
@@ -61,6 +84,18 @@ export interface FeedRow {
   next_refresh_at: string | null;
   refresh_status: 'idle' | 'refreshing' | 'error';
   last_refresh_error: string | null;
+  // Platform fields (Phase 6)
+  feed_type: FeedType;
+  platform_config: PlatformConfig;
+}
+
+/**
+ * Database row for the settings table
+ */
+export interface SettingsRow {
+  key: string;
+  value: string;
+  updated_at: string;
 }
 
 /**

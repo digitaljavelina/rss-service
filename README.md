@@ -22,6 +22,9 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 - **Export/Import** - Download feed configs as JSON for backup, restore from JSON files
 - **XML Export** - Download feeds as static RSS or Atom XML files
 - **Content Deduplication** - SHA-256 based GUIDs prevent duplicate items
+- **YouTube Feeds** - Create feeds from YouTube channels and playlists via Data API v3
+- **Reddit Feeds** - Create feeds from subreddits and user pages via built-in RSS
+- **Settings Page** - Manage API keys (YouTube) with save, test, and remove
 - **Dark Mode** - Light and dark theme with persistence
 
 ## Tech Stack
@@ -82,7 +85,9 @@ CREATE TABLE IF NOT EXISTS feeds (
   refresh_interval_minutes INTEGER,          -- NULL = manual only; 15, 30, 60, 1440 = scheduled
   next_refresh_at TIMESTAMPTZ,              -- When the feed should next be refreshed
   refresh_status TEXT DEFAULT 'idle',       -- idle | refreshing | error
-  last_refresh_error TEXT                   -- Error message from last failed refresh
+  last_refresh_error TEXT,                  -- Error message from last failed refresh
+  feed_type TEXT NOT NULL DEFAULT 'web',   -- web | youtube | reddit
+  platform_config JSONB NOT NULL DEFAULT '{}'  -- Platform-specific config (channelId, playlistId, etc.)
 );
 
 -- Items table
@@ -97,7 +102,15 @@ CREATE TABLE IF NOT EXISTS items (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Settings table (API keys)
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes
+CREATE INDEX IF NOT EXISTS idx_feeds_feed_type ON feeds(feed_type);
 CREATE INDEX IF NOT EXISTS idx_items_feed_id ON items(feed_id);
 CREATE INDEX IF NOT EXISTS idx_items_pub_date ON items(pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_feeds_slug ON feeds(slug);
@@ -107,10 +120,12 @@ CREATE INDEX IF NOT EXISTS idx_feeds_refresh_status ON feeds(refresh_status);
 -- Enable RLS
 ALTER TABLE feeds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- Policies (allow all for single-user app)
 CREATE POLICY "Allow all on feeds" ON feeds FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on items" ON items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on settings" ON settings FOR ALL USING (true) WITH CHECK (true);
 ```
 
 ### Development
@@ -252,6 +267,7 @@ Download feed as XML file with `Content-Disposition` header for browser download
 | `/feeds/new` | Create a new feed (URL + preview + save) |
 | `/feeds` | Dashboard — list all feeds with actions |
 | `/feeds/:slug/edit` | Edit feed configuration |
+| `/settings` | Settings — API key management |
 | `/feeds/:slug` | RSS/Atom feed output |
 
 ## Deployment Notes
@@ -278,7 +294,7 @@ Vercel Cron triggers the scheduler on a schedule configured in `vercel.json`. To
 | 3. Feed Management | ✅ Complete |
 | 4. Advanced Extraction | ✅ Complete |
 | 5. Automation & Scheduling | ✅ Complete |
-| 6. Platform Integrations | ⏳ Planned |
+| 6. Platform Integrations | ✅ Complete |
 
 ## License
 

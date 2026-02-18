@@ -19,7 +19,9 @@ import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
 import { invalidateFeed } from '../../services/feed-cache.js';
 import { buildFeed } from '../../services/feed-builder.js';
-import type { FeedSelectors, ExtractedItem, FeedRow } from '../../types/feed.js';
+import { isYouTubeUrl, parseYouTubeUrl, resolveChannelId, fetchPlaylistItems, getYouTubeApiKey } from '../../services/youtube.js';
+import { isRedditUrl, parseRedditUrl, buildRedditRssUrl, fetchRedditRss, parseRedditRss } from '../../services/reddit.js';
+import type { FeedSelectors, ExtractedItem, FeedRow, FeedType, PlatformConfig } from '../../types/feed.js';
 
 // Create feeds API router
 export const feedsApiRouter = Router();
@@ -30,6 +32,17 @@ interface CreateFeedRequest {
   selectors?: Partial<FeedSelectors>; // Now optional - auto-detect if not provided
   useHeadless?: boolean; // Use headless browser for JS-heavy sites
   refresh_interval_minutes?: number | null; // Auto-refresh interval in minutes; null = manual only
+  // Platform info from preview response (Phase 6)
+  platformInfo?: {
+    feedType: FeedType;
+    channelId?: string;
+    playlistId?: string;
+    channelTitle?: string;
+    subreddit?: string;
+    username?: string;
+    sort?: string;
+    feedUrl?: string;
+  };
   items?: Array<{
     title: string;
     link: string;
@@ -83,40 +96,10 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Use headless browser if requested
-    const useHeadless = body.useHeadless === true;
-
-    // Fetch page first to auto-detect selectors if needed
-    const fetchResult = useHeadless
-      ? await fetchPageWithBrowser(body.url)
-      : await fetchPage(body.url);
-
-    if (!fetchResult.ok || !fetchResult.html) {
-      res.status(400).json({
-        success: false,
-        errors: [`Failed to fetch URL: ${fetchResult.error || 'Unknown error'}`],
-      });
-      return;
-    }
-
-    // Extract items with auto-detection
-    const extraction = autoExtractItems(fetchResult.html, body.url, body.selectors);
-
-    if (!extraction || extraction.items.length === 0) {
-      res.status(400).json({
-        success: false,
-        errors: ['Could not detect any content items on this page. The page may not have a recognizable article list.'],
-      });
-      return;
-    }
-
-    // Generate feed ID
+    // Generate feed ID and slug
     const feedId = nanoid();
-
-    // Generate slug from name
     let slug = slugify(body.name, { lower: true, strict: true });
 
-    // Check if slug already exists
     const { data: existingFeed } = await supabase
       .from('feeds')
       .select('slug')
@@ -124,14 +107,8 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       .single();
 
     if (existingFeed) {
-      // Append short random suffix to make unique
       slug = `${slug}-${nanoid(6)}`;
     }
-
-    // Insert feed into database with detected selectors (include useHeadless flag)
-    const selectorsWithHeadless = useHeadless
-      ? { ...extraction.selectors, useHeadless: true }
-      : extraction.selectors;
 
     // Determine refresh interval and next refresh time
     const refreshIntervalMinutes = body.refresh_interval_minutes != null
@@ -139,15 +116,124 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       : null;
     const nextRefreshAt = calculateNextRefreshAt(refreshIntervalMinutes);
 
+    // Determine feed type from platformInfo or URL detection
+    const feedType: FeedType = body.platformInfo?.feedType
+      || (isYouTubeUrl(body.url) ? 'youtube' : isRedditUrl(body.url) ? 'reddit' : 'web');
+
+    // Platform-specific creation paths
+    let extractedItems: ExtractedItem[] = [];
+    let selectorsJson = '{}';
+    let platformConfig: PlatformConfig = {};
+
+    if (feedType === 'youtube') {
+      // YouTube: fetch videos via API
+      const apiKey = await getYouTubeApiKey();
+      if (!apiKey) {
+        res.status(400).json({
+          success: false,
+          errors: ['YouTube API key not configured. Go to Settings to add your key.'],
+        });
+        return;
+      }
+
+      // Use platformInfo from preview if available, otherwise resolve from URL
+      let channelId = body.platformInfo?.channelId;
+      let playlistId = body.platformInfo?.playlistId;
+      let channelTitle = body.platformInfo?.channelTitle || body.name;
+
+      if (!playlistId) {
+        const urlInfo = parseYouTubeUrl(body.url);
+        if (!urlInfo) {
+          res.status(400).json({ success: false, errors: ['Could not parse YouTube URL'] });
+          return;
+        }
+        const resolved = await resolveChannelId(apiKey, urlInfo);
+        channelId = resolved.channelId;
+        playlistId = resolved.uploadsPlaylistId;
+        channelTitle = resolved.channelTitle;
+      }
+
+      extractedItems = await fetchPlaylistItems(apiKey, playlistId!);
+      platformConfig = { channelId: channelId!, playlistId: playlistId!, channelTitle };
+
+    } else if (feedType === 'reddit') {
+      // Reddit: fetch RSS feed
+      let feedUrl = body.platformInfo?.feedUrl;
+
+      if (!feedUrl) {
+        const redditInfo = parseRedditUrl(body.url);
+        if (!redditInfo) {
+          res.status(400).json({ success: false, errors: ['Could not parse Reddit URL'] });
+          return;
+        }
+        feedUrl = buildRedditRssUrl(redditInfo);
+        platformConfig = {
+          subreddit: redditInfo.subreddit,
+          username: redditInfo.username,
+          sort: redditInfo.sort,
+          feedUrl,
+        };
+      } else {
+        platformConfig = {
+          subreddit: body.platformInfo?.subreddit,
+          username: body.platformInfo?.username,
+          sort: body.platformInfo?.sort,
+          feedUrl,
+        };
+      }
+
+      const xml = await fetchRedditRss(feedUrl);
+      extractedItems = parseRedditRss(xml, body.url);
+
+    } else {
+      // Web: existing scraping flow
+      const useHeadless = body.useHeadless === true;
+
+      const fetchResult = useHeadless
+        ? await fetchPageWithBrowser(body.url)
+        : await fetchPage(body.url);
+
+      if (!fetchResult.ok || !fetchResult.html) {
+        res.status(400).json({
+          success: false,
+          errors: [`Failed to fetch URL: ${fetchResult.error || 'Unknown error'}`],
+        });
+        return;
+      }
+
+      const extraction = autoExtractItems(fetchResult.html, body.url, body.selectors);
+
+      if (!extraction || extraction.items.length === 0) {
+        res.status(400).json({
+          success: false,
+          errors: ['Could not detect any content items on this page. The page may not have a recognizable article list.'],
+        });
+        return;
+      }
+
+      extractedItems = extraction.items.map((item) => ({
+        ...item,
+        pubDate: item.dateText ? parseDate(item.dateText) : undefined,
+      }));
+
+      const selectorsWithHeadless = useHeadless
+        ? { ...extraction.selectors, useHeadless: true }
+        : extraction.selectors;
+      selectorsJson = JSON.stringify(selectorsWithHeadless);
+    }
+
+    // Insert feed into database
     const { error: insertError } = await supabase.from('feeds').insert({
       id: feedId,
       slug: slug,
       name: body.name,
       url: body.url,
-      selectors: JSON.stringify(selectorsWithHeadless),
+      selectors: selectorsJson,
       item_limit: 100,
       refresh_interval_minutes: refreshIntervalMinutes,
       next_refresh_at: nextRefreshAt,
+      feed_type: feedType,
+      platform_config: platformConfig,
     });
 
     if (insertError) {
@@ -156,17 +242,11 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Parse dates and prepare items for insertion
-    const itemsWithDates: ExtractedItem[] = extraction.items.map((item) => ({
-      ...item,
-      pubDate: item.dateText ? parseDate(item.dateText) : undefined,
-    }));
-
+    // Insert items
     let itemCount = 0;
-    if (itemsWithDates.length > 0) {
-      // Insert items into database
+    if (extractedItems.length > 0) {
       const { error: itemsError } = await supabase.from('items').insert(
-        itemsWithDates.map((item) => ({
+        extractedItems.map((item) => ({
           id: nanoid(),
           feed_id: feedId,
           title: item.title,
@@ -179,9 +259,8 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
 
       if (itemsError) {
         console.error('Error inserting items:', itemsError);
-        // Feed created but items failed - continue and report
       } else {
-        itemCount = itemsWithDates.length;
+        itemCount = extractedItems.length;
       }
     }
 
@@ -229,6 +308,7 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       name: body.name,
       feedUrl: `${baseUrl}/feeds/${slug}`,
       itemCount,
+      feedType,
     });
   } catch (error) {
     console.error('Create feed error:', error);
@@ -239,10 +319,10 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
 // GET / - List all feeds
 feedsApiRouter.get('/', async (_req: Request, res: Response): Promise<void> => {
   try {
-    // Query all feeds including scheduling fields
+    // Query all feeds including scheduling and platform fields
     const { data: feeds, error } = await supabase
       .from('feeds')
-      .select('id, slug, name, url, created_at, updated_at, refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error')
+      .select('id, slug, name, url, created_at, updated_at, refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error, feed_type')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -272,6 +352,7 @@ feedsApiRouter.get('/', async (_req: Request, res: Response): Promise<void> => {
           next_refresh_at: feed.next_refresh_at ?? null,
           refresh_status: (feed.refresh_status as string) || 'idle',
           last_refresh_error: feed.last_refresh_error ?? null,
+          feed_type: (feed.feed_type as string) || 'web',
         };
       })
     );
@@ -316,6 +397,16 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
       // Invalid JSON, leave as null
     }
 
+    // Parse platform_config from JSON
+    let platformConfig = {};
+    try {
+      platformConfig = typeof feedRow.platform_config === 'string'
+        ? JSON.parse(feedRow.platform_config)
+        : (feedRow.platform_config || {});
+    } catch {
+      // Invalid JSON, leave as empty object
+    }
+
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const result: Record<string, unknown> = {
       id: feedRow.id,
@@ -331,6 +422,8 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
       refreshIntervalMinutes: feedRow.refresh_interval_minutes ?? null,
       nextRefreshAt: feedRow.next_refresh_at ?? null,
       refreshStatus: feedRow.refresh_status || 'idle',
+      feedType: feedRow.feed_type || 'web',
+      platformConfig,
     };
 
     // Include items if requested (for full export)
@@ -375,42 +468,83 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
 
     const feedRow = feed as FeedRow;
 
-    // Parse selectors from JSON (may be empty for auto-detect)
-    let selectors: Partial<FeedSelectors> & { useHeadless?: boolean } | undefined;
-    try {
-      selectors = JSON.parse(feedRow.selectors);
-    } catch {
-      // No selectors stored, will auto-detect
+    // Platform-aware refresh
+    let extractedItems: ExtractedItem[];
+
+    if (feedRow.feed_type === 'youtube') {
+      // YouTube refresh via API
+      const apiKey = await getYouTubeApiKey();
+      if (!apiKey) {
+        res.status(400).json({ error: 'YouTube API key not configured. Go to Settings to add your key.' });
+        return;
+      }
+
+      let platformConfig: { playlistId?: string } = {};
+      try {
+        platformConfig = typeof feedRow.platform_config === 'string'
+          ? JSON.parse(feedRow.platform_config)
+          : (feedRow.platform_config || {});
+      } catch { /* empty */ }
+
+      if (!platformConfig.playlistId) {
+        res.status(400).json({ error: 'YouTube playlist ID missing from feed configuration' });
+        return;
+      }
+
+      extractedItems = await fetchPlaylistItems(apiKey, platformConfig.playlistId);
+
+    } else if (feedRow.feed_type === 'reddit') {
+      // Reddit refresh via RSS
+      let platformConfig: { feedUrl?: string } = {};
+      try {
+        platformConfig = typeof feedRow.platform_config === 'string'
+          ? JSON.parse(feedRow.platform_config)
+          : (feedRow.platform_config || {});
+      } catch { /* empty */ }
+
+      const rssUrl = platformConfig.feedUrl;
+      if (!rssUrl) {
+        res.status(400).json({ error: 'Reddit RSS URL missing from feed configuration' });
+        return;
+      }
+
+      const xml = await fetchRedditRss(rssUrl);
+      extractedItems = parseRedditRss(xml, feedRow.url || rssUrl);
+
+    } else {
+      // Web scraping refresh (existing flow)
+      let selectors: Partial<FeedSelectors> & { useHeadless?: boolean } | undefined;
+      try {
+        selectors = JSON.parse(feedRow.selectors);
+      } catch {
+        // No selectors stored, will auto-detect
+      }
+
+      const useHeadless = selectors?.useHeadless === true;
+
+      const fetchResult = useHeadless
+        ? await fetchPageWithBrowser(feedRow.url || '')
+        : await fetchPage(feedRow.url || '');
+
+      if (!fetchResult.ok || !fetchResult.html) {
+        res.status(400).json({
+          error: `Failed to fetch source: ${fetchResult.error}`,
+        });
+        return;
+      }
+
+      const extractionSelectors = selectors
+        ? { item: selectors.item, title: selectors.title, link: selectors.link, description: selectors.description, date: selectors.date }
+        : undefined;
+
+      const extraction = autoExtractItems(fetchResult.html, feedRow.url || '', extractionSelectors);
+      if (!extraction) {
+        res.status(400).json({ error: 'Could not extract content from page' });
+        return;
+      }
+
+      extractedItems = extraction.items;
     }
-
-    // Check if feed was created with headless browser
-    const useHeadless = selectors?.useHeadless === true;
-
-    // Fetch page (use headless if feed was created with it)
-    const fetchResult = useHeadless
-      ? await fetchPageWithBrowser(feedRow.url || '')
-      : await fetchPage(feedRow.url || '');
-
-    if (!fetchResult.ok || !fetchResult.html) {
-      res.status(400).json({
-        error: `Failed to fetch source: ${fetchResult.error}`,
-      });
-      return;
-    }
-
-    // Remove useHeadless from selectors before passing to extraction (it's not a CSS selector)
-    const extractionSelectors = selectors
-      ? { item: selectors.item, title: selectors.title, link: selectors.link, description: selectors.description, date: selectors.date }
-      : undefined;
-
-    // Extract items with auto-detection
-    const extraction = autoExtractItems(fetchResult.html, feedRow.url || '', extractionSelectors);
-    if (!extraction) {
-      res.status(400).json({ error: 'Could not extract content from page' });
-      return;
-    }
-
-    const extractedItems = extraction.items;
 
     // Get existing GUIDs to avoid duplicates
     const { data: existingItems } = await supabase

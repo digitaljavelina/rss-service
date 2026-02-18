@@ -177,23 +177,34 @@ Plans:
 
 ### Phase 6: Platform Integrations
 
-**Goal:** User can create feeds from YouTube, Twitter, and Reddit using official APIs.
+**Goal:** User can create feeds from YouTube and Reddit using platform-specific integrations.
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Database schema + settings infrastructure
+- [ ] 06-02-PLAN.md — YouTube integration service
+- [ ] 06-03-PLAN.md — Reddit RSS integration service
+- [ ] 06-04-PLAN.md — UI updates for platform feeds
+- [ ] 06-05-PLAN.md — Scheduler updates + README + verification
 
 **Requirements:**
 - PLAT-01: User can create feeds from YouTube channels/playlists via API
-- PLAT-02: User can create feeds from Twitter/X accounts via API
-- PLAT-03: User can create feeds from Reddit subreddits/users via API
-- PLAT-04: User can configure API keys for each platform
+- ~~PLAT-02: User can create feeds from Twitter/X accounts via API~~ (Dropped — $100+/month for read API access)
+- PLAT-03: User can create feeds from Reddit subreddits/users via built-in RSS
+- PLAT-04: User can configure API keys (YouTube)
 - PLAT-05: System respects API rate limits and implements backoff
 
 **Success Criteria:**
 1. User can enter YouTube channel URL and API key, then receive a working RSS feed
-2. User can enter Twitter/X handle and API credentials, then receive a working RSS feed
-3. User can enter Reddit subreddit and API credentials, then receive a working RSS feed
-4. System displays clear error when API rate limit is hit (not silent failure)
-5. API keys are securely stored and reused across app restarts
+2. User can enter Reddit subreddit URL and receive a working RSS feed (no API key needed)
+3. System displays clear error when API rate limit is hit (not silent failure)
+4. API keys are securely stored and reused across app restarts
+5. Existing web feeds continue to work unchanged
 
 **Dependencies:** Phase 1
+
+**Status:** In Progress
 
 ---
 
@@ -247,9 +258,8 @@ Plans:
 | 2 | Core Feed Creation | Complete | 7 | 5/5 |
 | 3 | Feed Management | Complete | 8 | 4/4 |
 | 4 | Advanced Extraction | Complete | 3 | 3/3 |
-| 5 | Automation & Scheduling | Planned | 4 | 0/5 |
-| 5 | Automation & Scheduling | Not Started | 4 | 0/0 |
-| 6 | Platform Integrations | Not Started | 5 | 0/0 |
+| 5 | Automation & Scheduling | Complete | 4 | 5/5 |
+| 6 | Platform Integrations | In Progress | 4 | 0/5 |
 
 **Total:** 35 requirements across 6 phases
 

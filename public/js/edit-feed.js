@@ -21,6 +21,7 @@
   // Track original URL to detect changes
   let originalUrl = '';
   let feedId = '';
+  let feedType = 'web';
 
   /**
    * Extract slug from current URL path
@@ -144,6 +145,24 @@
 
       // Store original URL for change detection
       originalUrl = feed.url || '';
+
+      // Display feed type indicator for platform feeds
+      feedType = feed.feedType || 'web';
+      if (feedType !== 'web') {
+        var typeLabel = feedType === 'youtube' ? 'YouTube' : feedType === 'reddit' ? 'Reddit' : feedType;
+        var badge = document.createElement('span');
+        badge.className = feedType === 'youtube' ? 'badge badge-error badge-sm' : 'badge badge-warning badge-sm';
+        badge.textContent = typeLabel;
+        // Insert badge after the page heading
+        var heading = document.querySelector('h1');
+        if (heading) heading.appendChild(document.createTextNode(' ')), heading.appendChild(badge);
+
+        // Make source URL read-only for platform feeds (URL is tied to the channel/subreddit)
+        sourceUrlInput.readOnly = true;
+        sourceUrlInput.classList.add('opacity-60');
+        var urlHint = sourceUrlInput.parentElement.querySelector('.label-text-alt');
+        if (urlHint) urlHint.textContent = typeLabel + ' feed — source URL cannot be changed';
+      }
 
     } catch (error) {
       showError('Failed to load feed: ' + (error.message || 'Unknown error'));

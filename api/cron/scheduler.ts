@@ -31,6 +31,8 @@ interface FeedRow {
   next_refresh_at: string | null;
   refresh_status: 'idle' | 'refreshing' | 'error';
   last_refresh_error: string | null;
+  feed_type: 'web' | 'youtube' | 'reddit';
+  platform_config: Record<string, unknown>;
 }
 
 interface FeedSelectors {
@@ -61,19 +63,39 @@ function generateGuid(feedId: string, title: string, link: string): string {
 }
 
 /**
- * Refresh a single feed: fetch page, extract items, upsert new items,
- * enforce item limit, and update scheduling timestamps.
+ * Extract items based on feed type: web scraping, YouTube API, or Reddit RSS.
  */
-async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
-  const supabase = getSupabase();
+async function extractItems(feed: FeedRow): Promise<ExtractedItem[]> {
+  const feedType = feed.feed_type || 'web';
 
-  // Dynamically import services (they live in src/, using relative path from dist or direct on Vercel)
+  if (feedType === 'youtube') {
+    // YouTube: fetch via Data API v3
+    const { getYouTubeApiKey, fetchPlaylistItems } = await import('../../src/services/youtube.js');
+    const apiKey = await getYouTubeApiKey();
+    if (!apiKey) throw new Error('YouTube API key not configured');
+
+    const platformConfig = feed.platform_config as { playlistId?: string };
+    if (!platformConfig?.playlistId) throw new Error('YouTube feed missing playlistId in platform_config');
+
+    return await fetchPlaylistItems(apiKey, platformConfig.playlistId);
+  }
+
+  if (feedType === 'reddit') {
+    // Reddit: fetch built-in RSS feed
+    const { fetchRedditRss, parseRedditRss } = await import('../../src/services/reddit.js');
+    const platformConfig = feed.platform_config as { feedUrl?: string };
+    const rssUrl = platformConfig?.feedUrl || feed.url;
+    if (!rssUrl) throw new Error('Reddit feed missing feedUrl');
+
+    const rssXml = await fetchRedditRss(rssUrl);
+    return parseRedditRss(rssXml);
+  }
+
+  // Web: existing flow — fetch page, auto-detect, extract
   const { fetchPage } = await import('../../src/services/page-fetcher.js');
   const { fetchPageWithBrowser } = await import('../../src/services/page-fetcher-browser.js');
   const { autoExtractItems } = await import('../../src/services/auto-detector.js');
-  const { parseDate } = await import('../../src/services/date-parser.js');
 
-  // Parse stored selectors (may include useHeadless flag)
   let selectors: FeedSelectors | undefined;
   try {
     selectors = JSON.parse(feed.selectors);
@@ -84,7 +106,6 @@ async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
   const useHeadless = selectors?.useHeadless === true;
   const feedUrl = feed.url || '';
 
-  // Fetch page
   const fetchResult = useHeadless
     ? await fetchPageWithBrowser(feedUrl)
     : await fetchPage(feedUrl);
@@ -93,21 +114,26 @@ async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
     throw new Error(`Failed to fetch ${feedUrl}: ${fetchResult.error || 'Unknown error'}`);
   }
 
-  // Extract CSS selectors (strip useHeadless from the object before passing)
   const extractionSelectors: Partial<FeedSelectors> | undefined = selectors
-    ? {
-        item: selectors.item,
-        title: selectors.title,
-        link: selectors.link,
-        description: selectors.description,
-        date: selectors.date,
-      }
+    ? { item: selectors.item, title: selectors.title, link: selectors.link, description: selectors.description, date: selectors.date }
     : undefined;
 
   const extraction = autoExtractItems(fetchResult.html, feedUrl, extractionSelectors);
-  if (!extraction) {
-    throw new Error('Could not extract content from page');
-  }
+  if (!extraction) throw new Error('Could not extract content from page');
+
+  return extraction.items;
+}
+
+/**
+ * Refresh a single feed: extract items (by type), upsert new items,
+ * enforce item limit, and update scheduling timestamps.
+ */
+async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
+  const supabase = getSupabase();
+  const { parseDate } = await import('../../src/services/date-parser.js');
+
+  // Extract items using platform-specific logic
+  const items = await extractItems(feed);
 
   // Get existing GUIDs to avoid duplicates
   const { data: existingItems } = await supabase
@@ -128,18 +154,18 @@ async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
     guid: string;
   }> = [];
 
-  for (const item of extraction.items) {
+  for (const item of items) {
     const guid = generateGuid(feed.id, item.title, item.link);
     if (existingGuids.has(guid)) continue;
 
-    const pubDate = item.dateText ? parseDate(item.dateText) : undefined;
+    const pubDate = item.dateText ? parseDate(item.dateText) : (item.pubDate ?? undefined);
     newItemRows.push({
       id: nanoid(),
       feed_id: feed.id,
       title: item.title,
       link: item.link,
       description: item.description ?? null,
-      pub_date: pubDate?.toISOString() ?? new Date().toISOString(),
+      pub_date: pubDate instanceof Date ? pubDate.toISOString() : (pubDate || new Date().toISOString()),
       guid,
     });
   }
@@ -212,7 +238,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .lte('next_refresh_at', now)
       .eq('refresh_status', 'idle')
       .not('refresh_interval_minutes', 'is', null)
-      .not('url', 'is', null)
       .order('next_refresh_at', { ascending: true })
       .limit(MAX_FEEDS_PER_RUN);
 

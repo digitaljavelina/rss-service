@@ -9,6 +9,8 @@ import { fetchPage, likelyNeedsJavaScript } from '../../services/page-fetcher.js
 import { fetchPageWithBrowser } from '../../services/page-fetcher-browser.js';
 import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
+import { isYouTubeUrl, parseYouTubeUrl, resolveChannelId, fetchPlaylistItems, getYouTubeApiKey } from '../../services/youtube.js';
+import { isRedditUrl, parseRedditUrl, buildRedditRssUrl, fetchRedditRss, parseRedditRss } from '../../services/reddit.js';
 import type { ExtractedItem } from '../../types/feed.js';
 
 // Create preview router
@@ -75,6 +77,114 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Check for platform-specific URLs before web scraping
+    if (isYouTubeUrl(body.url)) {
+      const apiKey = await getYouTubeApiKey();
+      if (!apiKey) {
+        res.status(400).json({
+          success: false,
+          errors: ['YouTube API key not configured. Go to Settings to add your YouTube Data API key.'],
+        } as PreviewResponse);
+        return;
+      }
+
+      try {
+        const urlInfo = parseYouTubeUrl(body.url);
+        if (!urlInfo) {
+          res.status(400).json({
+            success: false,
+            errors: ['Could not parse YouTube URL. Supported formats: channel, @handle, /c/name, /user/name, playlist'],
+          } as PreviewResponse);
+          return;
+        }
+
+        const channelInfo = await resolveChannelId(apiKey, urlInfo);
+        const items = await fetchPlaylistItems(apiKey, channelInfo.uploadsPlaylistId);
+
+        res.status(200).json({
+          success: true,
+          items: items.map((i) => ({
+            title: i.title,
+            link: i.link,
+            description: i.description,
+            pubDate: i.pubDate?.toISOString(),
+          })),
+          metadata: {
+            pageTitle: channelInfo.channelTitle,
+            itemCount: items.length,
+            fetchedAt: new Date().toISOString(),
+            autoDetected: true,
+          },
+          usedHeadless: false,
+          // Pass platform info for feed creation
+          platformInfo: {
+            feedType: 'youtube',
+            channelId: channelInfo.channelId,
+            playlistId: channelInfo.uploadsPlaylistId,
+            channelTitle: channelInfo.channelTitle,
+          },
+        });
+      } catch (error) {
+        res.status(400).json({
+          success: false,
+          errors: [error instanceof Error ? error.message : 'Failed to fetch YouTube data'],
+        } as PreviewResponse);
+      }
+      return;
+    }
+
+    if (isRedditUrl(body.url)) {
+      try {
+        const redditInfo = parseRedditUrl(body.url);
+        if (!redditInfo) {
+          res.status(400).json({
+            success: false,
+            errors: ['Could not parse Reddit URL. Supported formats: /r/subreddit, /u/username, /user/username'],
+          } as PreviewResponse);
+          return;
+        }
+
+        const rssUrl = buildRedditRssUrl(redditInfo);
+        const xml = await fetchRedditRss(rssUrl);
+        const items = parseRedditRss(xml, body.url);
+
+        const pageTitle = redditInfo.subreddit
+          ? `r/${redditInfo.subreddit}`
+          : `u/${redditInfo.username}`;
+
+        res.status(200).json({
+          success: true,
+          items: items.map((i) => ({
+            title: i.title,
+            link: i.link,
+            description: i.description,
+            pubDate: i.pubDate?.toISOString(),
+          })),
+          metadata: {
+            pageTitle,
+            itemCount: items.length,
+            fetchedAt: new Date().toISOString(),
+            autoDetected: true,
+          },
+          usedHeadless: false,
+          platformInfo: {
+            feedType: 'reddit',
+            subreddit: redditInfo.subreddit || undefined,
+            username: redditInfo.username || undefined,
+            sort: redditInfo.sort || undefined,
+            feedUrl: rssUrl,
+          },
+        });
+      } catch (error) {
+        res.status(400).json({
+          success: false,
+          errors: [error instanceof Error ? error.message : 'Failed to fetch Reddit data'],
+        } as PreviewResponse);
+      }
+      return;
+    }
+
+    // Web scraping flow (existing)
     // First try static fetch
     const staticResult = await fetchPage(body.url);
     let usedHeadless = false;

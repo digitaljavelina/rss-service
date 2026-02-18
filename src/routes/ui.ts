@@ -33,3 +33,8 @@ uiRouter.get('/feeds/:slug/edit', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(servePage('editFeed'));
 });
+
+uiRouter.get('/settings', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(servePage('settings'));
+});

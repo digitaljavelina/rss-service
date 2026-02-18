@@ -113,13 +113,30 @@
     const tr = document.createElement('tr');
     tr.setAttribute('data-feed-id', feed.id);
 
-    // Name cell - link to edit page
+    // Name cell - link to edit page + platform badge
     const nameTd = document.createElement('td');
     const nameLink = document.createElement('a');
     nameLink.href = '/feeds/' + feed.slug + '/edit';
     nameLink.className = 'link link-primary font-medium';
     nameLink.textContent = feed.name;
     nameTd.appendChild(nameLink);
+
+    // Platform type badge for non-web feeds
+    var feedType = feed.feed_type || 'web';
+    if (feedType === 'youtube') {
+      var ytBadge = document.createElement('span');
+      ytBadge.className = 'badge badge-error badge-xs ml-2';
+      ytBadge.textContent = 'YT';
+      ytBadge.title = 'YouTube feed';
+      nameTd.appendChild(ytBadge);
+    } else if (feedType === 'reddit') {
+      var rdBadge = document.createElement('span');
+      rdBadge.className = 'badge badge-warning badge-xs ml-2';
+      rdBadge.textContent = 'Reddit';
+      rdBadge.title = 'Reddit feed';
+      nameTd.appendChild(rdBadge);
+    }
+
     tr.appendChild(nameTd);
 
     // Items cell
