@@ -17,6 +17,8 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 - **Edit Feeds** - Update feed name, URL, or selectors with automatic re-detection
 - **Delete Feeds** - Remove feeds with confirmation dialog
 - **Manual Refresh** - Update individual feeds on demand with single-row updates
+- **Auto-Refresh** - Feeds update automatically on configurable schedules (15min, 30min, hourly, daily)
+- **Refresh Status** - Dashboard shows last updated time, next refresh, and status for each feed
 - **Export/Import** - Download feed configs as JSON for backup, restore from JSON files
 - **XML Export** - Download feeds as static RSS or Atom XML files
 - **Content Deduplication** - SHA-256 based GUIDs prevent duplicate items
@@ -59,6 +61,7 @@ cp .env.example .env
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 BASE_URL=http://localhost:3000
+CRON_SECRET=your_cron_secret  # Required for scheduled auto-refresh (generate with: openssl rand -hex 32)
 ```
 
 ### Database Setup
@@ -75,7 +78,11 @@ CREATE TABLE IF NOT EXISTS feeds (
   selectors TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  item_limit INTEGER DEFAULT 100
+  item_limit INTEGER DEFAULT 100,
+  refresh_interval_minutes INTEGER,          -- NULL = manual only; 15, 30, 60, 1440 = scheduled
+  next_refresh_at TIMESTAMPTZ,              -- When the feed should next be refreshed
+  refresh_status TEXT DEFAULT 'idle',       -- idle | refreshing | error
+  last_refresh_error TEXT                   -- Error message from last failed refresh
 );
 
 -- Items table
@@ -94,6 +101,8 @@ CREATE TABLE IF NOT EXISTS items (
 CREATE INDEX IF NOT EXISTS idx_items_feed_id ON items(feed_id);
 CREATE INDEX IF NOT EXISTS idx_items_pub_date ON items(pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_feeds_slug ON feeds(slug);
+CREATE INDEX IF NOT EXISTS idx_feeds_next_refresh ON feeds(next_refresh_at) WHERE next_refresh_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_feeds_refresh_status ON feeds(refresh_status);
 
 -- Enable RLS
 ALTER TABLE feeds ENABLE ROW LEVEL SECURITY;
@@ -146,11 +155,12 @@ Content-Type: application/json
 
 {
   "name": "My Feed",
-  "url": "https://example.com"
+  "url": "https://example.com",
+  "refresh_interval_minutes": 60   // Optional: 15, 30, 60, 1440, or null for manual only
 }
 ```
 
-Creates a new feed with auto-detected selectors.
+Creates a new feed with auto-detected selectors. If `refresh_interval_minutes` is provided, `next_refresh_at` is set automatically.
 
 ### List Feeds
 
@@ -158,7 +168,11 @@ Creates a new feed with auto-detected selectors.
 GET /api/feeds
 ```
 
-Returns all feeds with item counts.
+Returns all feeds with item counts and refresh timing:
+- `refresh_interval_minutes`: How often the feed auto-refreshes (null = manual only)
+- `next_refresh_at`: ISO 8601 timestamp of next scheduled refresh (null = manual only)
+- `refresh_status`: Current status — `idle`, `refreshing`, or `error`
+- `last_refresh_error`: Error message from last failed refresh (null if no error)
 
 ### Get Feed (JSON)
 
@@ -182,10 +196,14 @@ Returns RSS 2.0 by default. Request Atom with `Accept: application/atom+xml` hea
 PUT /api/feeds/:id
 Content-Type: application/json
 
-{ "name": "Updated Name", "url": "https://example.com/new" }
+{
+  "name": "Updated Name",
+  "url": "https://example.com/new",
+  "refresh_interval_minutes": 30   // Optional: 15, 30, 60, 1440, or null for manual only
+}
 ```
 
-Updates feed configuration. If URL changes, items are cleared and re-fetched. Response includes `urlChanged: true` when URL was modified.
+Updates feed configuration. If URL changes, items are cleared and re-fetched. Response includes `urlChanged: true` when URL was modified. If `refresh_interval_minutes` changes, `next_refresh_at` is recalculated.
 
 ### Delete Feed
 
@@ -202,6 +220,15 @@ POST /api/feeds/:id/refresh
 ```
 
 Manually refresh a feed to check for new content. Uses content-based deduplication to avoid duplicates.
+
+### Cron Scheduler (Internal)
+
+```
+GET /api/cron/scheduler
+Authorization: Bearer <CRON_SECRET>
+```
+
+Called automatically by Vercel Cron every minute. Finds feeds whose `next_refresh_at` is in the past, refreshes up to 5 per run, and updates `next_refresh_at` for the next cycle. Requires `CRON_SECRET` environment variable.
 
 ### Export Feed (XML)
 
@@ -233,6 +260,15 @@ The Vercel deployment is configured with:
 - **Memory:** 1024 MB (for headless browser)
 - **Max Duration:** 60 seconds (for browser-based fetching)
 
+### Auto-Refresh Setup (Phase 5)
+
+Vercel Cron runs the scheduler every minute. To enable auto-refresh in production:
+
+1. Generate a cron secret: `openssl rand -hex 32`
+2. Add `CRON_SECRET` to your Vercel Dashboard environment variables
+3. Vercel Pro plan is required for per-minute cron jobs (Hobby plan supports daily cron only)
+4. The cron endpoint is already configured in `vercel.json`
+
 ## Project Status
 
 | Phase | Status |
@@ -241,7 +277,7 @@ The Vercel deployment is configured with:
 | 2. Core Feed Creation | ✅ Complete |
 | 3. Feed Management | ✅ Complete |
 | 4. Advanced Extraction | ✅ Complete |
-| 5. Automation & Scheduling | ⏳ Planned |
+| 5. Automation & Scheduling | ✅ Complete |
 | 6. Platform Integrations | ⏳ Planned |
 
 ## License
