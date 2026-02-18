@@ -135,15 +135,16 @@ export const pages: Record<string, string> = {
           <thead>
             <tr>
               <th>Feed Name</th>
-              <th>Status</th>
               <th>Items</th>
               <th>Last Updated</th>
+              <th>Next Refresh</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="feed-list">
             <tr id="loading-row">
-              <td colspan="5" class="text-center py-8 text-base-content/60">Loading feeds...</td>
+              <td colspan="6" class="text-center py-8 text-base-content/60">Loading feeds...</td>
             </tr>
           </tbody>
         </table>
