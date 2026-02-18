@@ -14,6 +14,7 @@ const slugify = slugifyModule.default || slugifyModule;
 import { createHash } from 'crypto';
 import { supabase } from '../../db/index.js';
 import { fetchPage } from '../../services/page-fetcher.js';
+import { fetchPageWithBrowser } from '../../services/page-fetcher-browser.js';
 import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
 import { invalidateFeed } from '../../services/feed-cache.js';
@@ -27,6 +28,7 @@ interface CreateFeedRequest {
   name: string;
   url: string;
   selectors?: Partial<FeedSelectors>; // Now optional - auto-detect if not provided
+  useHeadless?: boolean; // Use headless browser for JS-heavy sites
   items?: Array<{
     title: string;
     link: string;
@@ -81,8 +83,14 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Use headless browser if requested
+    const useHeadless = body.useHeadless === true;
+
     // Fetch page first to auto-detect selectors if needed
-    const fetchResult = await fetchPage(body.url);
+    const fetchResult = useHeadless
+      ? await fetchPageWithBrowser(body.url)
+      : await fetchPage(body.url);
+
     if (!fetchResult.ok || !fetchResult.html) {
       res.status(400).json({
         success: false,
@@ -120,13 +128,17 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       slug = `${slug}-${nanoid(6)}`;
     }
 
-    // Insert feed into database with detected selectors
+    // Insert feed into database with detected selectors (include useHeadless flag)
+    const selectorsWithHeadless = useHeadless
+      ? { ...extraction.selectors, useHeadless: true }
+      : extraction.selectors;
+
     const { error: insertError } = await supabase.from('feeds').insert({
       id: feedId,
       slug: slug,
       name: body.name,
       url: body.url,
-      selectors: JSON.stringify(extraction.selectors),
+      selectors: JSON.stringify(selectorsWithHeadless),
       item_limit: 100,
     });
 
@@ -348,15 +360,21 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
     const feedRow = feed as FeedRow;
 
     // Parse selectors from JSON (may be empty for auto-detect)
-    let selectors: Partial<FeedSelectors> | undefined;
+    let selectors: Partial<FeedSelectors> & { useHeadless?: boolean } | undefined;
     try {
       selectors = JSON.parse(feedRow.selectors);
     } catch {
       // No selectors stored, will auto-detect
     }
 
-    // Fetch page
-    const fetchResult = await fetchPage(feedRow.url || '');
+    // Check if feed was created with headless browser
+    const useHeadless = selectors?.useHeadless === true;
+
+    // Fetch page (use headless if feed was created with it)
+    const fetchResult = useHeadless
+      ? await fetchPageWithBrowser(feedRow.url || '')
+      : await fetchPage(feedRow.url || '');
+
     if (!fetchResult.ok || !fetchResult.html) {
       res.status(400).json({
         error: `Failed to fetch source: ${fetchResult.error}`,
@@ -364,8 +382,13 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
       return;
     }
 
+    // Remove useHeadless from selectors before passing to extraction (it's not a CSS selector)
+    const extractionSelectors = selectors
+      ? { item: selectors.item, title: selectors.title, link: selectors.link, description: selectors.description, date: selectors.date }
+      : undefined;
+
     // Extract items with auto-detection
-    const extraction = autoExtractItems(fetchResult.html, feedRow.url || '', selectors);
+    const extraction = autoExtractItems(fetchResult.html, feedRow.url || '', extractionSelectors);
     if (!extraction) {
       res.status(400).json({ error: 'Could not extract content from page' });
       return;
@@ -525,6 +548,15 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
     const newUrl = body.url !== undefined ? body.url.trim() : feedRow.url;
     const urlChanged = newUrl !== feedRow.url;
 
+    // Parse existing selectors to check for useHeadless flag
+    let existingSelectors: Partial<FeedSelectors> & { useHeadless?: boolean } | undefined;
+    try {
+      existingSelectors = JSON.parse(feedRow.selectors);
+    } catch {
+      // No selectors stored
+    }
+    const useHeadless = existingSelectors?.useHeadless === true;
+
     let updateData: Record<string, unknown> = {
       name,
       item_limit: itemLimit,
@@ -532,8 +564,11 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
     };
 
     if (urlChanged && newUrl) {
-      // Fetch new URL and re-detect selectors
-      const fetchResult = await fetchPage(newUrl);
+      // Fetch new URL and re-detect selectors (use headless if feed was created with it)
+      const fetchResult = useHeadless
+        ? await fetchPageWithBrowser(newUrl)
+        : await fetchPage(newUrl);
+
       if (!fetchResult.ok || !fetchResult.html) {
         res.status(400).json({
           success: false,
@@ -551,11 +586,15 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
         return;
       }
 
-      // Update URL, selectors
+      // Update URL, selectors (preserve useHeadless flag)
+      const newSelectors = useHeadless
+        ? { ...extraction.selectors, useHeadless: true }
+        : extraction.selectors;
+
       updateData = {
         ...updateData,
         url: newUrl,
-        selectors: JSON.stringify(extraction.selectors),
+        selectors: JSON.stringify(newSelectors),
       };
 
       // Delete existing items and re-fetch with new selectors

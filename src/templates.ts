@@ -290,6 +290,22 @@ export const pages: Record<string, string> = {
         <input type="text" id="feed-name" placeholder="Hacker News" class="input input-bordered" required />
       </div>
 
+      <!-- Headless Browser Toggle -->
+      <div class="form-control mt-4">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input type="checkbox" id="use-headless" class="toggle toggle-sm" />
+          <span class="label-text">Use headless browser (for JavaScript-heavy sites)</span>
+        </label>
+      </div>
+
+      <!-- Headless Suggestion Banner -->
+      <div id="headless-suggestion" class="alert alert-info mt-4 hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>This page may need JavaScript rendering. Try enabling "Use headless browser" above and re-previewing.</span>
+      </div>
+
       <!-- Action Buttons -->
       <div class="flex gap-4 mt-6">
         <button id="btn-preview" class="btn btn-outline flex-1">
@@ -311,6 +327,39 @@ export const pages: Record<string, string> = {
     <div id="preview-meta" class="text-sm text-base-content/70 mb-4"></div>
 
     <div id="preview-items" class="space-y-3"></div>
+
+    <!-- Selector Adjustment Panel -->
+    <div id="selector-panel" class="collapse collapse-arrow bg-base-200 mt-4 hidden">
+      <input type="checkbox" />
+      <div class="collapse-title font-medium text-sm">Adjust Selectors</div>
+      <div class="collapse-content">
+        <p class="text-xs text-base-content/60 mb-3">Auto-detected CSS selectors. Edit to refine extraction.</p>
+        <div class="form-control mb-2">
+          <label class="label py-1"><span class="label-text text-xs">Item container</span></label>
+          <input type="text" id="sel-item" class="input input-bordered input-sm" placeholder="e.g. article, .post" />
+        </div>
+        <div class="form-control mb-2">
+          <label class="label py-1"><span class="label-text text-xs">Title</span></label>
+          <input type="text" id="sel-title" class="input input-bordered input-sm" placeholder="e.g. h2 a, .title" />
+        </div>
+        <div class="form-control mb-2">
+          <label class="label py-1"><span class="label-text text-xs">Link</span></label>
+          <input type="text" id="sel-link" class="input input-bordered input-sm" placeholder="e.g. a[href]" />
+        </div>
+        <div class="form-control mb-2">
+          <label class="label py-1"><span class="label-text text-xs">Description (optional)</span></label>
+          <input type="text" id="sel-description" class="input input-bordered input-sm" placeholder="e.g. .summary, p" />
+        </div>
+        <div class="form-control mb-2">
+          <label class="label py-1"><span class="label-text text-xs">Date (optional)</span></label>
+          <input type="text" id="sel-date" class="input input-bordered input-sm" placeholder="e.g. time, .date" />
+        </div>
+        <button id="btn-repreview" class="btn btn-sm btn-outline mt-2">
+          <span class="loading loading-spinner loading-sm hidden"></span>
+          Re-preview with these selectors
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 <script src="/js/create-feed.js"></script>`

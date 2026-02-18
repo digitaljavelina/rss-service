@@ -5,7 +5,8 @@
 
 import { Router, Request, Response } from 'express';
 import * as cheerio from 'cheerio';
-import { fetchPage } from '../../services/page-fetcher.js';
+import { fetchPage, likelyNeedsJavaScript } from '../../services/page-fetcher.js';
+import { fetchPageWithBrowser } from '../../services/page-fetcher-browser.js';
 import { autoExtractItems } from '../../services/auto-detector.js';
 import { parseDate } from '../../services/date-parser.js';
 import type { ExtractedItem } from '../../types/feed.js';
@@ -23,6 +24,8 @@ interface PreviewRequest {
     description?: string;
     date?: string;
   };
+  // Use headless browser for JS-heavy sites
+  useHeadless?: boolean;
 }
 
 interface PreviewResponse {
@@ -46,6 +49,8 @@ interface PreviewResponse {
     description?: string;
     date?: string;
   };
+  // Suggest using headless browser if page looks like an SPA
+  suggestHeadless?: boolean;
   errors?: string[];
 }
 
@@ -72,8 +77,14 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Fetch page
-    const result = await fetchPage(body.url);
+    // Use headless browser if requested
+    const useHeadless = body.useHeadless === true;
+
+    // Fetch page (static or headless)
+    const result = useHeadless
+      ? await fetchPageWithBrowser(body.url)
+      : await fetchPage(body.url);
+
     if (!result.ok || !result.html) {
       res.status(400).json({
         success: false,
@@ -81,6 +92,9 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       } as PreviewResponse);
       return;
     }
+
+    // Check if page likely needs JS rendering (only when not already using headless)
+    const suggestHeadless = useHeadless ? false : likelyNeedsJavaScript(result.html);
 
     // Extract items with auto-detection
     const extraction = autoExtractItems(result.html, body.url, body.selectors);
@@ -95,6 +109,7 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
           fetchedAt: new Date().toISOString(),
           autoDetected: !body.selectors?.item,
         },
+        suggestHeadless,
         errors: ['Could not detect any content items on this page. The page may not have a recognizable article list.'],
       } as PreviewResponse);
       return;
@@ -126,6 +141,7 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
         autoDetected: !body.selectors?.item,
       },
       selectors: extraction.selectors,
+      suggestHeadless,
     } as PreviewResponse);
   } catch (error) {
     console.error('Preview extraction error:', error);
