@@ -4,23 +4,23 @@
 
 **Core Value:** Create RSS feeds from anything. Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
 
-**Current Focus:** Phase 5 In Progress - Cron scheduler deployed, need CRON_SECRET + feed settings UI
+**Current Focus:** Phase 5 Complete - All scheduling features verified. Phase 6 (Platform Integrations) next.
 
 ---
 
 ## Current Position
 
-**Phase:** 5 of 6 (Automation & Scheduling) - In progress
-**Plan:** 4 of 5 in phase (complete)
-**Status:** In progress
-**Last activity:** 2026-02-18 - Completed 05-04-PLAN.md (Dashboard refresh timing display)
+**Phase:** 5 of 6 (Automation & Scheduling) - Complete
+**Plan:** 5 of 5 in phase (complete)
+**Status:** Complete
+**Last activity:** 2026-02-18 - Completed 05-05-PLAN.md (README update + human verification)
 
-**Progress:** ████████████░░░░░░░░ 61% (22/36 plans)
+**Progress:** █████████████░░░░░░░ 64% (23/36 plans)
 Phase 1: ██████████ 100% (4/4 plans)
 Phase 2: ██████████ 100% (5/5 plans)
 Phase 3: ██████████ 100% (4/4 plans)
 Phase 4: ██████████ 100% (3/3 plans)
-Phase 5: ████████░░ 80% (4/5 plans)
+Phase 5: ██████████ 100% (5/5 plans)
 
 ---
 
@@ -32,22 +32,22 @@ Phase 5: ████████░░ 80% (4/5 plans)
 | 2 | Core Feed Creation | Complete | 7 | 5/5 | 100% |
 | 3 | Feed Management | Complete | 8 | 4/4 | 100% |
 | 4 | Advanced Extraction | Complete | 3 | 3/3 | 100% |
-| 5 | Automation & Scheduling | In Progress | 4 | 2/5 | 40% |
+| 5 | Automation & Scheduling | Complete | 4 | 5/5 | 100% |
 | 6 | Platform Integrations | Not Started | 5 | 0/0 | 0% |
 
-**Overall Progress:** 18/36 plans completed (50%)
+**Overall Progress:** 23/36 plans completed (64%)
 
 ---
 
 ## Performance Metrics
 
-**Milestone:** Phase 5 Plan 04 complete - Dashboard displays refresh timing (Last Updated, Next Refresh, Status)
-**Velocity:** 18 plans completed
+**Milestone:** Phase 5 Complete - Feeds auto-refresh on schedule, dashboard shows timing, cron deployed
+**Velocity:** 23 plans completed
 **Rework Rate:** 0%
 
 **Quality Indicators:**
-- Plans completed: 16
-- Phase 1-4 verified by user
+- Plans completed: 23
+- Phase 1-5 verified by user
 - Deployed to Vercel production
 - Supabase database operational
 - Auto-detection service with pattern matching
@@ -60,6 +60,9 @@ Phase 5: ████████░░ 80% (4/5 plans)
 - Feed export (JSON download) and import (JSON upload)
 - Automatic headless browser for JS-heavy sites
 - Simplified UX (no manual toggles or selector UI)
+- Auto-refresh scheduling with configurable intervals
+- Cron scheduler with refresh_status locking
+- Dashboard shows Last Updated, Next Refresh, Status per feed
 
 ---
 
@@ -130,16 +133,16 @@ Phase 5: ████████░░ 80% (4/5 plans)
 | timeUntil null = "Manual" | next_refresh_at=null displayed as "Manual" to clearly indicate no auto-schedule | 2026-02-18 |
 | Idle shown as text not badge | Only actionable states (refreshing/error) get badges; idle is subtle text to reduce noise | 2026-02-18 |
 | Error tooltip via title attr | Native browser tooltip for error details on hover; no JS library needed | 2026-02-18 |
+| Daily cron for Vercel Hobby | Hobby plan limits to once/day; keep all interval options for self-hosted/Pro | 2026-02-18 |
+| "Back to My Feeds" label | Consistent with sidebar naming; "Dashboard" in sidebar = home page, not feed list | 2026-02-18 |
 
 ### Open Questions
 
 - How to handle authentication for platform APIs? (storage strategy)
-- Job queue library choice? (node-cron vs BullMQ - to be resolved in Plan 05-02)
 
 ### Active Todos
 
-- Add CRON_SECRET to Vercel Dashboard environment variables (openssl rand -hex 32)
-- Execute Plan 05-05 (verification of complete scheduling system)
+(None)
 
 ### Known Blockers
 
@@ -147,37 +150,30 @@ Phase 5: ████████░░ 80% (4/5 plans)
 
 ### Recently Resolved
 
-(None yet)
+- CRON_SECRET added to Vercel Dashboard
+- Cron schedule fixed for Hobby plan (daily at midnight UTC)
+- Edit page nav label fixed for consistency
 
 ---
 
 ## Session Continuity
 
 **Last Session:** 2026-02-18
-**Stopped at:** Completed 05-04-PLAN.md (Dashboard refresh timing display)
+**Stopped at:** Phase 5 Complete - all 5 plans executed and verified
 **Resume file:** None
 
 **Context for Next Session:**
-- Phase 1-4 complete and deployed to Vercel
+- Phase 1-5 complete and deployed to Vercel
 - Production URL: https://rss-service-five.vercel.app/
 - Supabase database with feeds/items tables + scheduling columns
-- Scheduling columns: refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error
-- Indexes: idx_feeds_next_refresh (partial), idx_feeds_refresh_status
-- FeedRow TypeScript interface updated (src/types/feed.ts)
-- REFRESH_INTERVALS constant exported from src/types/feed.ts
-- Auto-detection service: autoDetectSelectors(), autoExtractItems()
-- Headless browser infrastructure: page-fetcher-browser.ts with fetchPageWithBrowser()
-- Vercel config: memory 1024MB, maxDuration 60s for both api/index.ts and api/cron/scheduler.ts
-- Cron job: api/cron/scheduler.ts - runs every minute, queries next_refresh_at, uses refresh_status lock
-- CRON_SECRET: must be added to Vercel Dashboard before cron job will authenticate
-- Dashboard: 6-column table (Feed Name, Items, Last Updated, Next Refresh, Status, Actions)
-- Dashboard JS: timeAgo(), timeUntil() helpers; refresh_status badges (idle/refreshing/error with tooltip)
-- GET /api/feeds: returns refresh_interval_minutes, next_refresh_at, refresh_status, last_refresh_error
-- Create/Edit feed forms: include refresh interval dropdown (05-03 plan)
+- Cron schedule: daily at midnight UTC (Vercel Hobby plan)
+- CRON_SECRET configured in Vercel Dashboard
+- All refresh interval options available (15min, 30min, 1hr, 6hr, daily, manual)
+- Self-hosted deployments can trigger scheduler at any frequency
+- Phase 6 (Platform Integrations) is next: YouTube, Twitter/X, Reddit API feeds
 
 **Next Steps:**
-1. Add CRON_SECRET to Vercel Dashboard environment variables
-2. Plan 05-05: End-to-end verification of the complete scheduling system
+1. Phase 6: Platform Integrations (YouTube, Twitter/X, Reddit API feeds)
 
 ---
 
@@ -214,6 +210,15 @@ Phase 5: ████████░░ 80% (4/5 plans)
 - Final implementation: automatic JS detection with headless fallback
 - All Phase 4 requirements satisfied (CORE-06, CORE-07, CORE-08)
 
+### Phase 5 Checkpoint (2026-02-18)
+- All 5 plans executed (schema, cron, interval UI, dashboard timing, verification)
+- Human verification completed and approved
+- Fixes during verification:
+  - Cron schedule changed from every-minute to daily (Vercel Hobby plan)
+  - "Back to Dashboard" renamed to "Back to My Feeds" for nav consistency
+- All features verified: auto-refresh, interval config, dashboard timing, manual-only
+- All Phase 5 requirements satisfied (SCHED-01 through SCHED-04)
+
 ---
 
-*Last updated: 2026-02-18 (after 05-04 completion - dashboard refresh timing display)*
+*Last updated: 2026-02-18 (Phase 5 complete - all scheduling features verified)*
