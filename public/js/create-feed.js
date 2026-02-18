@@ -1,5 +1,5 @@
 // Create Feed Form Handler
-// Simplified UI - selector detection is automatic in the background
+// Simplified UI - headless browser and selector detection are automatic
 
 (function() {
   'use strict';
@@ -16,10 +16,6 @@
   const previewErrorText = document.getElementById('preview-error-text');
   const successSection = document.getElementById('success-section');
   const feedUrlLink = document.getElementById('feed-url-link');
-
-  // Headless browser elements
-  const useHeadless = document.getElementById('use-headless');
-  const headlessSuggestion = document.getElementById('headless-suggestion');
 
   // Store preview data for save
   let lastPreviewData = null;
@@ -129,13 +125,6 @@
       }
     }
 
-    // Handle suggestHeadless flag
-    if (data.suggestHeadless === true && !useHeadless.checked) {
-      headlessSuggestion.classList.remove('hidden');
-    } else {
-      headlessSuggestion.classList.add('hidden');
-    }
-
     // Auto-fill feed name from page title if empty
     if (!feedName.value.trim() && data.metadata && data.metadata.pageTitle) {
       feedName.value = data.metadata.pageTitle;
@@ -147,7 +136,6 @@
    */
   function showPreviewError(message) {
     previewSection.classList.add('hidden');
-    headlessSuggestion.classList.add('hidden');
     previewErrors.classList.remove('hidden');
     previewErrorText.textContent = message;
   }
@@ -157,7 +145,6 @@
    */
   function hideErrors() {
     previewErrors.classList.add('hidden');
-    headlessSuggestion.classList.add('hidden');
   }
 
   /**
@@ -166,7 +153,6 @@
   function disableForm() {
     feedName.disabled = true;
     sourceUrl.disabled = true;
-    useHeadless.disabled = true;
     btnPreview.disabled = true;
     btnSave.disabled = true;
   }
@@ -174,15 +160,13 @@
   /**
    * Call preview API
    */
-  async function callPreviewApi(url, headless) {
-    const body = { url, useHeadless: headless };
-
+  async function callPreviewApi(url) {
     const response = await fetch('/api/preview', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ url })
     });
 
     const result = await response.json();
@@ -206,14 +190,13 @@
     }
 
     const url = sourceUrl.value.trim();
-    const headless = useHeadless.checked;
 
     setLoading(btnPreview, true);
 
     try {
-      const result = await callPreviewApi(url, headless);
+      const result = await callPreviewApi(url);
 
-      // Store for save
+      // Store for save (including whether headless was used)
       lastPreviewData = result;
 
       // Render preview
@@ -244,12 +227,13 @@
 
     const url = sourceUrl.value.trim();
     const name = feedName.value.trim() || lastPreviewData.metadata?.pageTitle || 'Untitled Feed';
-    const headless = useHeadless.checked;
+    // Pass along whether headless was used during preview
+    const usedHeadless = lastPreviewData.usedHeadless === true;
 
     setLoading(btnSave, true);
 
     try {
-      const body = { name, url, useHeadless: headless };
+      const body = { name, url, useHeadless: usedHeadless };
 
       const response = await fetch('/api/feeds', {
         method: 'POST',

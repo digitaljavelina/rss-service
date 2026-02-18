@@ -24,8 +24,6 @@ interface PreviewRequest {
     description?: string;
     date?: string;
   };
-  // Use headless browser for JS-heavy sites
-  useHeadless?: boolean;
 }
 
 interface PreviewResponse {
@@ -49,8 +47,8 @@ interface PreviewResponse {
     description?: string;
     date?: string;
   };
-  // Suggest using headless browser if page looks like an SPA
-  suggestHeadless?: boolean;
+  // Whether headless browser was used for this extraction
+  usedHeadless?: boolean;
   errors?: string[];
 }
 
@@ -77,39 +75,47 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Use headless browser if requested
-    const useHeadless = body.useHeadless === true;
+    // First try static fetch
+    const staticResult = await fetchPage(body.url);
+    let usedHeadless = false;
 
-    // Fetch page (static or headless)
-    const result = useHeadless
-      ? await fetchPageWithBrowser(body.url)
-      : await fetchPage(body.url);
-
-    if (!result.ok || !result.html) {
+    if (!staticResult.ok || !staticResult.html) {
       res.status(400).json({
         success: false,
-        errors: [`Failed to fetch: ${result.error || 'Unknown error'}`],
+        errors: [`Failed to fetch: ${staticResult.error || 'Unknown error'}`],
       } as PreviewResponse);
       return;
     }
 
-    // Check if page likely needs JS rendering (only when not already using headless)
-    const suggestHeadless = useHeadless ? false : likelyNeedsJavaScript(result.html);
+    let html = staticResult.html;
 
-    // Extract items with auto-detection
-    const extraction = autoExtractItems(result.html, body.url, body.selectors);
+    // Check if page likely needs JS rendering
+    const needsHeadless = likelyNeedsJavaScript(html);
+
+    // Try extraction with static HTML first
+    let extraction = autoExtractItems(html, body.url, body.selectors);
+
+    // If no items found and page likely needs JS, automatically retry with headless browser
+    if ((!extraction || extraction.items.length === 0) && needsHeadless) {
+      const headlessResult = await fetchPageWithBrowser(body.url);
+      if (headlessResult.ok && headlessResult.html) {
+        html = headlessResult.html;
+        usedHeadless = true;
+        extraction = autoExtractItems(html, body.url, body.selectors);
+      }
+    }
 
     if (!extraction || extraction.items.length === 0) {
       res.status(200).json({
         success: true,
         items: [],
         metadata: {
-          pageTitle: cheerio.load(result.html)('title').text().trim() || 'Untitled',
+          pageTitle: cheerio.load(html)('title').text().trim() || 'Untitled',
           itemCount: 0,
           fetchedAt: new Date().toISOString(),
           autoDetected: !body.selectors?.item,
         },
-        suggestHeadless,
+        usedHeadless,
         errors: ['Could not detect any content items on this page. The page may not have a recognizable article list.'],
       } as PreviewResponse);
       return;
@@ -122,7 +128,7 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     }));
 
     // Get page title
-    const $ = cheerio.load(result.html);
+    const $ = cheerio.load(html);
     const pageTitle = $('title').text().trim() || 'Untitled';
 
     // Return success response with detected selectors
@@ -141,7 +147,7 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
         autoDetected: !body.selectors?.item,
       },
       selectors: extraction.selectors,
-      suggestHeadless,
+      usedHeadless,
     } as PreviewResponse);
   } catch (error) {
     console.error('Preview extraction error:', error);

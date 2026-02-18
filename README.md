@@ -10,8 +10,7 @@ Create RSS feeds from anything. Point at any URL, select what content matters, a
 
 - **URL to RSS** - Turn any webpage into an RSS feed
 - **Auto-Detection** - Automatically finds content patterns (articles, lists, links)
-- **Headless Browser** - Opt-in browser rendering for JavaScript-heavy sites (SPAs, React apps)
-- **JS-Need Detection** - Suggests headless mode when static extraction finds minimal content
+- **Automatic JS Rendering** - Automatically uses headless browser for JavaScript-heavy sites (SPAs, React apps)
 - **Preview Before Save** - See what you'll get before creating the feed
 - **Multiple Formats** - RSS 2.0 and Atom support
 - **Feed Dashboard** - View all feeds with status, item count, and last updated time
@@ -130,18 +129,14 @@ POST /api/preview
 Content-Type: application/json
 
 {
-  "url": "https://example.com",
-  "useHeadless": false
+  "url": "https://example.com"
 }
 ```
 
-Auto-detects content and returns extracted items for preview.
-
-**Options:**
-- `useHeadless` (optional): Use headless browser for JS-heavy sites
+Auto-detects content and returns extracted items for preview. Automatically uses headless browser for JavaScript-heavy sites.
 
 **Response includes:**
-- `suggestHeadless`: `true` if page appears to need JavaScript rendering
+- `usedHeadless`: `true` if headless browser was used
 
 ### Create Feed
 
@@ -151,15 +146,11 @@ Content-Type: application/json
 
 {
   "name": "My Feed",
-  "url": "https://example.com",
-  "useHeadless": false
+  "url": "https://example.com"
 }
 ```
 
 Creates a new feed with auto-detected selectors.
-
-**Options:**
-- `useHeadless` (optional): Store headless preference for future refreshes
 
 ### List Feeds
 
