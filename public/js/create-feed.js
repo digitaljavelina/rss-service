@@ -26,6 +26,7 @@
   // Store preview data for save
   let lastPreviewData = null;
   let selectedPlatform = 'web';
+  let autoSwitching = false;
 
   // Platform tab config
   var platformConfig = {
@@ -69,11 +70,13 @@
         }
       }
 
-      // Reset preview when switching platforms
-      previewSection.classList.add('hidden');
-      previewErrors.classList.add('hidden');
-      lastPreviewData = null;
-      btnSave.disabled = true;
+      // Reset preview when user manually switches platforms (not auto-detect)
+      if (!autoSwitching) {
+        previewSection.classList.add('hidden');
+        previewErrors.classList.add('hidden');
+        lastPreviewData = null;
+        btnSave.disabled = true;
+      }
     });
   }
 
@@ -261,8 +264,10 @@
       if (result.platformInfo && result.platformInfo.feedType && platformTabs) {
         var detected = result.platformInfo.feedType;
         if (detected !== selectedPlatform) {
+          autoSwitching = true;
           var tabBtn = platformTabs.querySelector('[data-platform="' + detected + '"]');
           if (tabBtn) tabBtn.click();
+          autoSwitching = false;
         }
       }
 
