@@ -43,30 +43,66 @@
   }
 
   /**
-   * Get status badge element based on feed's updatedAt timestamp
+   * Format a past date as a short relative time (e.g., "5 min ago")
+   */
+  function timeAgo(dateString) {
+    if (!dateString) return '\u2014';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '\u2014';
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return Math.floor(seconds / 60) + ' min ago';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + ' hr ago';
+    return Math.floor(seconds / 86400) + ' days ago';
+  }
+
+  /**
+   * Format a future date as a short relative time (e.g., "in 10 min")
+   * Returns "Manual" if null, "Pending..." if in the past
+   */
+  function timeUntil(dateString) {
+    if (!dateString) return 'Manual';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Manual';
+    const now = new Date();
+    const seconds = Math.floor((date - now) / 1000);
+
+    if (seconds < 0) return 'Pending...';
+    if (seconds < 60) return 'in < 1 min';
+    if (seconds < 3600) return 'in ' + Math.floor(seconds / 60) + ' min';
+    if (seconds < 86400) return 'in ' + Math.floor(seconds / 3600) + ' hr';
+    return 'in ' + Math.floor(seconds / 86400) + ' days';
+  }
+
+  /**
+   * Get refresh status badge element based on feed's refresh_status field
    */
   function getStatusBadge(feed) {
-    const badge = document.createElement('span');
-    badge.className = 'badge';
+    const status = feed.refresh_status || 'idle';
 
-    if (!feed.updatedAt) {
-      badge.classList.add('badge-warning');
-      badge.textContent = 'No data';
+    if (status === 'refreshing') {
+      const wrapper = document.createElement('span');
+      wrapper.className = 'badge badge-warning gap-1';
+      wrapper.textContent = 'Refreshing...';
+      return wrapper;
+    }
+
+    if (status === 'error') {
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-error cursor-help';
+      badge.textContent = 'Error';
+      if (feed.last_refresh_error) {
+        badge.setAttribute('title', feed.last_refresh_error);
+      }
       return badge;
     }
 
-    const updatedAt = new Date(feed.updatedAt);
-    const now = new Date();
-    const diffHours = (now - updatedAt) / (1000 * 60 * 60);
-
-    if (diffHours < 24) {
-      badge.classList.add('badge-success');
-      badge.textContent = 'OK';
-    } else {
-      badge.classList.add('badge-warning');
-      badge.textContent = 'Stale';
-    }
-
+    // idle - no badge needed, show subtle indicator
+    const badge = document.createElement('span');
+    badge.className = 'text-base-content/50 text-sm';
+    badge.textContent = 'Idle';
     return badge;
   }
 
@@ -86,11 +122,6 @@
     nameTd.appendChild(nameLink);
     tr.appendChild(nameTd);
 
-    // Status cell
-    const statusTd = document.createElement('td');
-    statusTd.appendChild(getStatusBadge(feed));
-    tr.appendChild(statusTd);
-
     // Items cell
     const itemsTd = document.createElement('td');
     itemsTd.textContent = feed.itemCount !== undefined ? String(feed.itemCount) : '0';
@@ -99,8 +130,19 @@
     // Last updated cell
     const updatedTd = document.createElement('td');
     updatedTd.className = 'text-sm text-base-content/70';
-    updatedTd.textContent = formatDate(feed.updatedAt);
+    updatedTd.textContent = timeAgo(feed.updated_at || feed.updatedAt);
     tr.appendChild(updatedTd);
+
+    // Next refresh cell
+    const nextRefreshTd = document.createElement('td');
+    nextRefreshTd.className = 'text-sm text-base-content/70';
+    nextRefreshTd.textContent = timeUntil(feed.next_refresh_at);
+    tr.appendChild(nextRefreshTd);
+
+    // Status cell
+    const statusTd = document.createElement('td');
+    statusTd.appendChild(getStatusBadge(feed));
+    tr.appendChild(statusTd);
 
     // Actions cell
     const actionsTd = document.createElement('td');
@@ -152,7 +194,7 @@
   function showEmptyState() {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.setAttribute('colspan', '5');
+    td.setAttribute('colspan', '6');
     td.className = 'text-center py-12';
 
     const wrapper = document.createElement('div');
@@ -354,7 +396,7 @@
     const loadingTr = document.createElement('tr');
     loadingTr.id = 'loading-row';
     const loadingTd = document.createElement('td');
-    loadingTd.setAttribute('colspan', '5');
+    loadingTd.setAttribute('colspan', '6');
     loadingTd.className = 'text-center py-8 text-base-content/60';
     loadingTd.textContent = 'Loading feeds...';
     loadingTr.appendChild(loadingTd);
@@ -390,7 +432,7 @@
 
       const errorTr = document.createElement('tr');
       const errorTd = document.createElement('td');
-      errorTd.setAttribute('colspan', '5');
+      errorTd.setAttribute('colspan', '6');
       errorTd.className = 'text-center py-8';
 
       const errorMsg = document.createElement('div');
