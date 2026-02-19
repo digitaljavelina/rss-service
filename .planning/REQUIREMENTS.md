@@ -17,8 +17,8 @@ Requirements for Docker & Self-Hosting milestone. Each maps to roadmap phases.
 
 ### Database
 
-- [ ] **DB-01**: App uses pg Pool when DATABASE_URL is set, Supabase JS client otherwise — existing routes unchanged
-- [ ] **DB-02**: PostgreSQL schema initializes automatically on first docker-compose up via init-scripts
+- [x] **DB-01**: App uses pg Pool when DATABASE_URL is set, Supabase JS client otherwise — existing routes unchanged
+- [x] **DB-02**: PostgreSQL schema initializes automatically on first docker-compose up via init-scripts
 
 ### Health & Reliability
 
@@ -69,8 +69,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CNTR-03 | Phase 8 | Pending |
 | CNTR-04 | Phase 8 | Pending |
 | CNTR-05 | Phase 8 | Pending |
-| DB-01 | Phase 7 | Pending |
-| DB-02 | Phase 7 | Pending |
+| DB-01 | Phase 7 | Complete |
+| DB-02 | Phase 7 | Complete |
 | HLTH-01 | Phase 8 | Pending |
 | HLTH-02 | Phase 8 | Pending |
 | HLTH-03 | Phase 8 | Pending |

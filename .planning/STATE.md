@@ -13,11 +13,11 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Milestone:** v1.1 Docker & Self-Hosting
 **Phase:** 7 of 10 (Database Abstraction Layer)
-**Plan:** 1 of 2 in current phase
+**Plan:** 2 of 2 in current phase (phase complete)
 **Status:** Executing
-**Last activity:** 2026-02-19 — Phase 7 Plan 01 complete (pg adapter + environment dispatch)
+**Last activity:** 2026-02-19 — Phase 7 Plan 02 complete (migration system + Docker init + startup retry)
 
-Progress: [█░░░░░░░░░] 10% (v1.1)
+Progress: [██░░░░░░░░] 20% (v1.1)
 
 ---
 
@@ -36,6 +36,10 @@ v1.1 decisions to track:
 - 07-01: Thin pg adapter (14 patterns) with Supabase-compatible chainable API; DATABASE_URL dispatches to pg Pool
 - 07-01: Backend logged at debug level only; pool.on('error') registered to prevent idle client process crash
 - 07-01: QueryBuilder.then() makes builders thenable — mirrors Supabase JS implicit await behavior
+- 07-02: initializeDatabase() single entry point — pg runs node-pg-migrate migrations, Supabase pings (schema managed externally)
+- 07-02: Exponential backoff: 500ms base, doubles per attempt, 30s max total before throwing user-readable error
+- 07-02: Migration dir resolved via fileURLToPath+dirname+join (ESM-safe, works in tsx dev and compiled dist/)
+- 07-02: Docker init-scripts are separate file copies (not symlinks) — Docker build context anti-pattern avoidance
 
 ### Open Questions
 
@@ -54,17 +58,17 @@ v1.1 decisions to track:
 
 ## Session Continuity
 
-**Last Session:** 2026-02-19T01:24:24Z
-**Stopped at:** Completed 07-01-PLAN.md
-**Resume file:** .planning/phases/07-database-abstraction-layer/07-01-SUMMARY.md
+**Last Session:** 2026-02-19T01:32:53Z
+**Stopped at:** Completed 07-02-PLAN.md (Phase 7 complete)
+**Resume file:** .planning/phases/07-database-abstraction-layer/07-02-SUMMARY.md
 
 **Context for Next Session:**
 - v1.0 MVP shipped (Vercel + Supabase, production URL: https://rss-service-five.vercel.app/)
 - v1.1 adds Docker self-hosting: bundled PostgreSQL, real cron, system Chromium
-- Phase 7 Plan 01 DONE: PgAdapter + environment-dispatched Proxy in db/index.ts
-- Next: Plan 02 — schema migrations (node-pg-migrate), Docker init scripts, startup retry logic
-- PgAdapter.getPool() ready for schema.ts; isPgMode() ready for migration guard
+- Phase 7 COMPLETE: pg adapter (01) + migration system (02) fully operational
+- Next: Phase 8 (Docker Infrastructure) — extend docker/docker-compose.yml with app service, Dockerfile, CI build
+- docker/docker-compose.yml has postgres:16-bookworm service ready; Phase 8 extends with app service at project root
 
 ---
 
-*Last updated: 2026-02-19 (Phase 7 Plan 01 complete)*
+*Last updated: 2026-02-19 (Phase 7 Plan 02 complete — Phase 7 done)*

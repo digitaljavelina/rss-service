@@ -23,7 +23,7 @@
 
 **Milestone Goal:** Containerize the service for self-hosted deployment with bundled PostgreSQL and real cron scheduling, while keeping Vercel as a dev/preview option.
 
-- [ ] **Phase 7: Database Abstraction Layer** — Environment-switched DB client so the app can talk to local PostgreSQL or Supabase depending on deployment
+- [x] **Phase 7: Database Abstraction Layer** — Environment-switched DB client so the app can talk to local PostgreSQL or Supabase depending on deployment (completed 2026-02-19)
 - [ ] **Phase 8: Docker Infrastructure** — Multi-stage Dockerfile, Docker Compose with bundled PostgreSQL, health endpoint, graceful shutdown, and system Chromium
 - [ ] **Phase 9: In-Process Cron Scheduling** — node-cron fires feed refreshes at configured intervals inside the container, replacing the Vercel cron trigger
 - [ ] **Phase 10: Verification and Dual-Deployment Parity** — End-to-end smoke test confirming Docker works from a fresh clone and Vercel remains unbroken
@@ -86,7 +86,7 @@
 | 4. Advanced Extraction | v1.0 | 3/3 | Complete | 2026-02-18 |
 | 5. Automation & Scheduling | v1.0 | 5/5 | Complete | 2026-02-18 |
 | 6. Platform Integrations | v1.0 | 5/5 | Complete | 2026-02-18 |
-| 7. Database Abstraction Layer | 1/2 | In Progress|  | - |
+| 7. Database Abstraction Layer | 2/2 | Complete   | 2026-02-19 | - |
 | 8. Docker Infrastructure | v1.1 | 0/TBD | Not started | - |
 | 9. In-Process Cron Scheduling | v1.1 | 0/TBD | Not started | - |
 | 10. Verification and Dual-Deployment Parity | v1.1 | 0/TBD | Not started | - |
