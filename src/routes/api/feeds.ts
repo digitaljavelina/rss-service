@@ -301,7 +301,7 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Return success response
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     res.status(201).json({
       id: feedId,
       slug: slug,
@@ -407,7 +407,7 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
       // Invalid JSON, leave as empty object
     }
 
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     const result: Record<string, unknown> = {
       id: feedRow.id,
       slug: feedRow.slug,
@@ -802,7 +802,7 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
     invalidateFeed(feedRow.slug);
     invalidateFeed(feedRow.id);
 
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     const updated = updatedFeed as FeedRow;
     res.status(200).json({
       id: updated.id,
