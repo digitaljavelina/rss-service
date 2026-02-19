@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: rssservice
+      POSTGRES_USER: rssuser
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rsspassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-scripts:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rssuser -d rssservice"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    # Note: Port 5432 not exposed to host in production (internal-only)
+
+  app:
+    build: .
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://rssuser:${POSTGRES_PASSWORD:-rsspassword}@postgres:5432/rssservice
+      PORT: 3000
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+    env_file:
+      - path: .env.docker
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    shm_size: '256mb'
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

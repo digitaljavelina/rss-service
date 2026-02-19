@@ -34,6 +34,20 @@ async function getBrowser(): Promise<Browser> {
       executablePath: await chromium.default.executablePath(),
       headless: 'shell',
     });
+  } else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    // Docker: system Chromium installed via apt (Debian Bookworm)
+    // --no-sandbox required even as non-root in containers (kernel namespace constraint)
+    // --disable-dev-shm-usage falls back to /tmp (safety net alongside shm_size: 256mb)
+    const puppeteer = await import('puppeteer-core');
+    browserInstance = await puppeteer.default.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+      ],
+      headless: true,
+    });
   } else {
     // Local dev: use full puppeteer with bundled Chrome
     try {

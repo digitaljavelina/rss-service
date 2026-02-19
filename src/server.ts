@@ -1,22 +1,65 @@
 import 'dotenv/config';
+import http from 'http';
 import { app } from './app.js';
-import getPort, { portNumbers } from 'get-port';
 import { initializeDatabase } from './db/schema.js';
+import { isPgMode } from './db/index.js';
+import { PgAdapter } from './db/pg-adapter.js';
 import pino from 'pino';
 
 const logger = pino({ level: 'info' });
 
+// Create HTTP server (needed for graceful shutdown)
+const server = http.createServer(app);
+
+// Phase 9 will assign a ScheduledTask here; null-checked in shutdown
+let cronTask: { stop: () => void } | null = null;
+
+/**
+ * Graceful shutdown handler
+ * Stops cron, closes HTTP server, closes DB pool
+ */
+async function shutdown(signal: string): Promise<void> {
+  logger.info({ signal }, 'Shutdown signal received');
+
+  // 1. Stop cron scheduler if running (Phase 9 will wire this)
+  if (cronTask) {
+    cronTask.stop();
+    logger.info('Cron scheduler stopped');
+  }
+
+  // 2. Stop accepting new requests; wait for in-flight to complete
+  server.close(async () => {
+    logger.info('HTTP server closed');
+
+    // 3. Close DB pool if using pg
+    if (isPgMode()) {
+      await PgAdapter.getInstance().shutdown();
+      logger.info('DB pool closed');
+    }
+
+    process.exit(0);
+  });
+
+  // 4. Force exit after 10s if graceful shutdown stalls
+  setTimeout(() => {
+    logger.error('Forced shutdown after 10s timeout');
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+// Register signal handlers SYNCHRONOUSLY at module level
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 async function startServer(): Promise<void> {
   try {
-    // Initialize database (now async for Supabase)
+    // Initialize database
     await initializeDatabase();
 
-    // Get available port
-    const port = await getPort({ port: portNumbers(3000, 3100) });
+    const port = parseInt(process.env.PORT || '3000', 10);
 
-    // Start server
-    app.listen(port, () => {
-      logger.info(`RSS Service running at http://localhost:${port}`);
+    server.listen(port, () => {
+      logger.info({ port }, 'RSS Service running');
     });
   } catch (error) {
     logger.error({ err: error }, 'Failed to start server');
