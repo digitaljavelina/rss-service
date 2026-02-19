@@ -15,6 +15,8 @@ Create RSS feeds from anything. Point at any URL — website, YouTube channel, o
 - **Automatic JS Rendering** - Uses headless browser for JavaScript-heavy sites (SPAs, React apps)
 - **Preview Before Save** - See what you'll get before creating the feed
 - **Multiple Formats** - RSS 2.0 and Atom support
+- **Responsive Layout** - Collapsible drawer sidebar for mobile, always-open on desktop
+- **Smart Home Page** - Redirects to feeds if you have any, shows onboarding if empty
 - **Feed Dashboard** - View all feeds with platform badges, item count, and refresh status
 - **Edit Feeds** - Update feed name, URL, or selectors with automatic re-detection
 - **Delete Feeds** - Remove feeds with confirmation dialog
@@ -272,7 +274,7 @@ Called automatically by Vercel Cron. Refreshes due feeds (up to 5 per run) acros
 
 | Route | Description |
 |-------|-------------|
-| `/` | Home page |
+| `/` | Landing page (redirects to `/feeds` if feeds exist) |
 | `/create` | Create a new feed (URL + preview + save) |
 | `/feeds` | Dashboard — list all feeds with actions |
 | `/feeds/:slug/edit` | Edit feed configuration |
