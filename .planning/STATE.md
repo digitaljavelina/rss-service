@@ -5,19 +5,19 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** Create RSS feeds from anything. Point at any URL, auto-detect content patterns, and get a feed you can subscribe to in your reader.
-**Current focus:** v1.1 Docker & Self-Hosting — Phase 8: Docker Infrastructure
+**Current focus:** v1.1 Docker & Self-Hosting — Phase 9: In-Process Cron Scheduling
 
 ---
 
 ## Current Position
 
 **Milestone:** v1.1 Docker & Self-Hosting
-**Phase:** 8 of 10 (Docker Infrastructure)
-**Plan:** 2 of 2 in current phase (phase complete)
-**Status:** Ready for Phase 9
-**Last activity:** 2026-02-19 — Phase 8 complete (Dockerfile, compose, health endpoint, SIGTERM, Chromium path)
+**Phase:** 9 of 10 (In-Process Cron Scheduling)
+**Plan:** 1 of 1 in current phase (phase complete)
+**Status:** Ready for Phase 10
+**Last activity:** 2026-02-19 — Phase 9 complete (scheduler service + server wiring)
 
-Progress: [████░░░░░░] 40% (v1.1)
+Progress: [██████░░░░] 60% (v1.1)
 
 ---
 
@@ -32,7 +32,7 @@ v1.1 decisions to track:
 - Keep `supabase` export name in `src/db/index.ts` so zero routes require changes
 - Use `node:22-bookworm-slim` (not Alpine — musl libc breaks better-sqlite3)
 - Do NOT use `@sparticuz/chromium` in Docker (Lambda-only package); use system Chromium via apt
-- `node-cron` 4.2.1 chosen — bundled TS types, no @types/node-cron needed
+- `node-cron` 3.0.3 chosen — bundled TS types, no @types/node-cron needed
 - 07-01: Thin pg adapter (14 patterns) with Supabase-compatible chainable API; DATABASE_URL dispatches to pg Pool
 - 07-01: Backend logged at debug level only; pool.on('error') registered to prevent idle client process crash
 - 07-01: QueryBuilder.then() makes builders thenable — mirrors Supabase JS implicit await behavior
@@ -44,6 +44,9 @@ v1.1 decisions to track:
 - 08-01: shm_size 256mb for Chromium stability; HEALTHCHECK uses inline Node.js (no curl)
 - 08-02: Signal handlers registered SYNCHRONOUSLY at module level (not inside async startServer)
 - 08-02: 10s shutdown timeout prevents container hanging; --no-sandbox required in Docker even as non-root
+- 09-01: Scheduler starts only in pg mode — isPgMode() check prevents cron in Supabase/Vercel mode
+- 09-01: Every-minute cron checks `next_refresh_at <= now` — allows feed-specific intervals without changing cron expression
+- 09-01: refreshDueFeeds() exported for potential Vercel handler reuse (reduces duplication)
 
 ### Open Questions
 
@@ -62,17 +65,17 @@ v1.1 decisions to track:
 ## Session Continuity
 
 **Last Session:** 2026-02-19
-**Stopped at:** Completed Phase 8 (Docker Infrastructure)
-**Resume file:** .planning/phases/08-docker-infrastructure/08-02-SUMMARY.md
+**Stopped at:** Completed Phase 9 (In-Process Cron Scheduling)
+**Resume file:** .planning/phases/09-cron-scheduling/09-01-SUMMARY.md
 
 **Context for Next Session:**
 - v1.0 MVP shipped (Vercel + Supabase, production URL: https://rss-service-five.vercel.app/)
 - v1.1 adds Docker self-hosting: bundled PostgreSQL, real cron, system Chromium
-- Phase 7 COMPLETE: pg adapter (01) + migration system (02) fully operational
-- Phase 8 COMPLETE: Dockerfile, docker-compose.yml, .dockerignore, .env.docker.example, /health endpoint, SIGTERM handler, Chromium path
-- Next: Phase 9 (In-Process Cron Scheduling) — node-cron fires feed refreshes at configured intervals
-- cronTask placeholder in src/server.ts ready for Phase 9 wiring
+- Phase 7 COMPLETE: pg adapter (01) + migration system (02)
+- Phase 8 COMPLETE: Dockerfile, docker-compose.yml, /health endpoint, SIGTERM handler, Chromium path
+- Phase 9 COMPLETE: node-cron scheduler service + server wiring
+- Next: Phase 10 (Verification and Dual-Deployment Parity) — end-to-end smoke test for Docker + Vercel
 
 ---
 
-*Last updated: 2026-02-19 (Phase 8 complete)*
+*Last updated: 2026-02-19 (Phase 9 complete)*

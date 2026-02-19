@@ -25,7 +25,7 @@
 
 - [x] **Phase 7: Database Abstraction Layer** — Environment-switched DB client so the app can talk to local PostgreSQL or Supabase depending on deployment (completed 2026-02-19)
 - [x] **Phase 8: Docker Infrastructure** — Multi-stage Dockerfile, Docker Compose with bundled PostgreSQL, health endpoint, graceful shutdown, and system Chromium (completed 2026-02-19)
-- [ ] **Phase 9: In-Process Cron Scheduling** — node-cron fires feed refreshes at configured intervals inside the container, replacing the Vercel cron trigger
+- [x] **Phase 9: In-Process Cron Scheduling** — node-cron fires feed refreshes at configured intervals inside the container, replacing the Vercel cron trigger (completed 2026-02-19)
 - [ ] **Phase 10: Verification and Dual-Deployment Parity** — End-to-end smoke test confirming Docker works from a fresh clone and Vercel remains unbroken
 
 ## Phase Details
@@ -65,7 +65,8 @@
   1. A feed configured with a 15-minute refresh interval is automatically refreshed every 15 minutes while the container is running — confirmed by watching updated `last_fetched_at` timestamps in the database
   2. The Vercel cron path (`api/cron/scheduler.ts` HTTP handler) continues to work unchanged — both deployment modes call the same underlying scheduler logic
   3. Stopping and restarting the container resumes cron scheduling automatically on startup with no manual intervention
-**Plans**: TBD
+**Plans**: 1 plan
+  - [x] 09-01-PLAN.md — Scheduler service + server wiring
 
 ### Phase 10: Verification and Dual-Deployment Parity
 **Goal**: The Docker deployment works correctly end-to-end from a fresh clone, and the Vercel deployment remains fully functional — both paths confirmed before the milestone closes
@@ -90,7 +91,7 @@
 | 6. Platform Integrations | v1.0 | 5/5 | Complete | 2026-02-18 |
 | 7. Database Abstraction Layer | v1.1 | 2/2 | Complete | 2026-02-19 |
 | 8. Docker Infrastructure | v1.1 | 2/2 | Complete | 2026-02-19 |
-| 9. In-Process Cron Scheduling | v1.1 | 0/TBD | Not started | - |
+| 9. In-Process Cron Scheduling | v1.1 | 1/1 | Complete | 2026-02-19 |
 | 10. Verification and Dual-Deployment Parity | v1.1 | 0/TBD | Not started | - |
 
 ---
