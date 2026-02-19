@@ -39,7 +39,9 @@
   2. All existing feed routes (list, create, edit, delete, refresh) work identically against local PostgreSQL as they do against Supabase
   3. Setting `DATABASE_URL` routes the app to pg Pool; omitting it falls back to the Supabase JS client — confirmed by starting the app in both configurations
   4. On first `docker-compose up` against a fresh volume, the feeds, items, and settings tables are created automatically with no manual SQL required
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 07-01-PLAN.md — pg adapter with chainable query builder + environment-dispatched index.ts
+  - [ ] 07-02-PLAN.md — SQL migrations, Docker init scripts, schema.ts with backoff + migration runner
 
 ### Phase 8: Docker Infrastructure
 **Goal**: A single `docker-compose up --build` command produces a running, healthy RSS service with bundled PostgreSQL, headless browser support, and container-level health monitoring
@@ -84,7 +86,7 @@
 | 4. Advanced Extraction | v1.0 | 3/3 | Complete | 2026-02-18 |
 | 5. Automation & Scheduling | v1.0 | 5/5 | Complete | 2026-02-18 |
 | 6. Platform Integrations | v1.0 | 5/5 | Complete | 2026-02-18 |
-| 7. Database Abstraction Layer | v1.1 | 0/TBD | Not started | - |
+| 7. Database Abstraction Layer | v1.1 | 0/2 | Planning complete | - |
 | 8. Docker Infrastructure | v1.1 | 0/TBD | Not started | - |
 | 9. In-Process Cron Scheduling | v1.1 | 0/TBD | Not started | - |
 | 10. Verification and Dual-Deployment Parity | v1.1 | 0/TBD | Not started | - |
