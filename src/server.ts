@@ -4,6 +4,7 @@ import { app } from './app.js';
 import { initializeDatabase } from './db/schema.js';
 import { isPgMode } from './db/index.js';
 import { PgAdapter } from './db/pg-adapter.js';
+import { startScheduler } from './services/scheduler.js';
 import pino from 'pino';
 
 const logger = pino({ level: 'info' });
@@ -11,7 +12,7 @@ const logger = pino({ level: 'info' });
 // Create HTTP server (needed for graceful shutdown)
 const server = http.createServer(app);
 
-// Phase 9 will assign a ScheduledTask here; null-checked in shutdown
+// Cron task assigned by startScheduler(); null-checked in shutdown
 let cronTask: { stop: () => void } | null = null;
 
 /**
@@ -21,7 +22,7 @@ let cronTask: { stop: () => void } | null = null;
 async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, 'Shutdown signal received');
 
-  // 1. Stop cron scheduler if running (Phase 9 will wire this)
+  // 1. Stop cron scheduler if running
   if (cronTask) {
     cronTask.stop();
     logger.info('Cron scheduler stopped');
@@ -60,6 +61,9 @@ async function startServer(): Promise<void> {
 
     server.listen(port, () => {
       logger.info({ port }, 'RSS Service running');
+
+      // Start in-process cron scheduler (only in pg/Docker mode)
+      cronTask = startScheduler();
     });
   } catch (error) {
     logger.error({ err: error }, 'Failed to start server');
