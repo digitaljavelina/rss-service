@@ -16,7 +16,8 @@
   const previewErrors = document.getElementById('preview-errors');
   const previewErrorText = document.getElementById('preview-error-text');
   const successSection = document.getElementById('success-section');
-  const feedUrlLink = document.getElementById('feed-url-link');
+  const feedUrlDisplay = document.getElementById('feed-url-display');
+  const btnCopyUrl = document.getElementById('btn-copy-url');
 
   // Platform tab elements
   const platformTabs = document.getElementById('platform-tabs');
@@ -332,9 +333,8 @@
       // Show success
       successSection.classList.remove('hidden');
 
-      // Set feed URL link
-      feedUrlLink.href = result.feedUrl;
-      feedUrlLink.textContent = result.feedUrl;
+      // Set feed URL in read-only input
+      feedUrlDisplay.value = result.feedUrl;
 
       // Disable form
       disableForm();
@@ -349,12 +349,24 @@
     }
   };
 
-  // Allow Enter key to trigger preview
-  sourceUrl.addEventListener('keypress', function(e) {
+  // Allow Enter key to trigger preview from URL or feed name fields
+  function handleEnterPreview(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       btnPreview.click();
     }
-  });
+  }
+  sourceUrl.addEventListener('keypress', handleEnterPreview);
+  feedName.addEventListener('keypress', handleEnterPreview);
+
+  // Copy feed URL to clipboard
+  if (btnCopyUrl) {
+    btnCopyUrl.onclick = function() {
+      navigator.clipboard.writeText(feedUrlDisplay.value).then(function() {
+        btnCopyUrl.classList.add('btn-success');
+        setTimeout(function() { btnCopyUrl.classList.remove('btn-success'); }, 1500);
+      });
+    };
+  }
 
 })();

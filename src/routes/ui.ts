@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { layout, sidebar, pages } from '../templates.js';
+import { supabase } from '../db/index.js';
 
 // Create UI router
 export const uiRouter = Router();
@@ -14,7 +15,19 @@ function servePage(pageName: string): string {
 }
 
 // Routes
-uiRouter.get('/', (req, res) => {
+uiRouter.get('/', async (req, res) => {
+  try {
+    const { count } = await supabase
+      .from('feeds')
+      .select('*', { count: 'exact', head: true });
+
+    if (count && count > 0) {
+      return res.redirect(302, '/feeds');
+    }
+  } catch {
+    // DB error — fall through to landing page
+  }
+
   res.setHeader('Content-Type', 'text/html');
   res.send(servePage('home'));
 });

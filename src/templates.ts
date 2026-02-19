@@ -16,23 +16,43 @@ export const layout = `<!DOCTYPE html>
     })();
   </script>
 </head>
-<body class="bg-base-100 flex">
-  {{sidebar}}
-  <main class="flex-1 p-8">
-    {{content}}
-  </main>
+<body class="bg-base-100">
+  <div class="drawer lg:drawer-open">
+    <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content">
+      <!-- Mobile navbar -->
+      <div class="navbar bg-base-200 lg:hidden">
+        <div class="flex-none">
+          <label for="sidebar-drawer" class="btn btn-square btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </label>
+        </div>
+        <div class="flex-1">
+          <a href="/feeds" class="btn btn-ghost text-xl">RSS Service</a>
+        </div>
+      </div>
+      <main class="p-4 md:p-8">
+        {{content}}
+      </main>
+    </div>
+    <div class="drawer-side">
+      <label for="sidebar-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+      {{sidebar}}
+    </div>
+  </div>
   <script src="/js/app.js?v=3"></script>
 </body>
 </html>`;
 
-export const sidebar = `<aside class="w-64 min-h-screen bg-base-200 flex flex-col">
+export const sidebar = `<aside class="w-64 min-h-full bg-base-200 flex flex-col">
   <div class="p-6">
-    <h1 class="text-xl font-bold">RSS Service</h1>
+    <a href="/feeds" class="text-xl font-bold">RSS Service</a>
   </div>
 
   <nav class="flex-1">
     <ul class="menu">
-      <li><a href="/" class="active">Dashboard</a></li>
       <li><a href="/feeds">My Feeds</a></li>
       <li><a href="/create">Create Feed</a></li>
       <li><a href="/settings">Settings</a></li>
@@ -60,11 +80,11 @@ export const sidebar = `<aside class="w-64 min-h-screen bg-base-200 flex flex-co
 
 export const pages: Record<string, string> = {
   home: `<div class="max-w-4xl mx-auto">
-  <div class="hero min-h-[60vh]">
+  <div class="hero py-12">
     <div class="hero-content text-center">
       <div class="max-w-2xl">
-        <h1 class="text-5xl font-bold mb-4">Create RSS feeds from anything</h1>
-        <p class="text-xl mb-8">Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.</p>
+        <h1 class="text-3xl md:text-5xl font-bold mb-4">Create RSS feeds from anything</h1>
+        <p class="text-base md:text-xl mb-4">Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.</p>
 
         <a href="/create" class="btn btn-primary btn-lg">Create Your First Feed</a>
       </div>
@@ -73,7 +93,7 @@ export const pages: Record<string, string> = {
 
   <div class="divider"></div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <div class="card bg-base-200">
       <div class="card-body items-center text-center">
         <div class="text-4xl mb-4">1</div>
@@ -278,13 +298,21 @@ export const pages: Record<string, string> = {
   </div>
 
   <!-- Success section -->
-  <div id="success-section" class="alert alert-success mb-6 hidden">
-    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div>
+  <div id="success-section" class="mb-6 hidden">
+    <div class="alert alert-success mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
       <h3 class="font-bold">Feed Created!</h3>
-      <div class="text-sm">Your feed is ready. <a id="feed-url-link" href="#" target="_blank" class="link link-primary">Open RSS Feed</a></div>
+    </div>
+    <label class="label"><span class="label-text">RSS Feed URL</span></label>
+    <div class="flex gap-2">
+      <input type="text" id="feed-url-display" class="input input-bordered flex-1 opacity-70" readonly />
+      <button id="btn-copy-url" class="btn btn-ghost btn-square" type="button" title="Copy feed URL">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      </button>
     </div>
   </div>
 
