@@ -41,7 +41,7 @@ Someone who:
 
 ## Constraints
 
-- **Vercel deployment** — serverless functions, daily cron on Hobby plan
+- **Dual deployment** — Vercel serverless for dev/preview, Docker for production
 - **Supabase backend** — PostgreSQL database, free tier sufficient
 - **API keys required** — YouTube integration needs user-provided credentials
 - **Single user** — no auth/multi-user complexity
@@ -79,7 +79,16 @@ Someone who:
 
 ### Active
 
-(None — ship to validate next milestone)
+## Current Milestone: v1.1 Docker & Self-Hosting
+
+**Goal:** Containerize the service for self-hosted deployment with bundled PostgreSQL and real cron scheduling, while keeping Vercel as a dev/preview option.
+
+**Target features:**
+- Dockerfile + Docker Compose (app + PostgreSQL, auto-restart)
+- Real cron scheduling at configured intervals (not limited to daily)
+- Health checks for container monitoring
+- Environment-based configuration for Docker deployment
+- Dual deployment support (Docker production, Vercel dev/preview)
 
 ### Out of Scope
 
@@ -117,4 +126,4 @@ Cron: daily at midnight UTC (Vercel Hobby plan limit).
 | feed_type column routing | Routes preview/create/refresh/cron by feed_type | ✓ Good — clean extensibility |
 
 ---
-*Last updated: 2026-02-18 after v1.0 milestone*
+*Last updated: 2026-02-18 after v1.1 milestone start*
