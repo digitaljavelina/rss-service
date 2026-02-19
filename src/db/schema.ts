@@ -1,84 +1,93 @@
-import { supabase } from './index.js';
+import { isPgMode, supabase } from './index.js';
+import { PgAdapter } from './pg-adapter.js';
+import { runner } from 'node-pg-migrate';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import pino from 'pino';
 
-/**
- * Initialize database schema in Supabase
- * Note: Tables should be created via Supabase Dashboard or migrations
- * This function verifies the connection and logs table status
- */
-export async function initializeDatabase(): Promise<void> {
-  try {
-    // Test connection by querying feeds table
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
+
+const MAX_WAIT_MS = 30_000;
+const BASE_DELAY_MS = 500;
+
+// ─── Connection Test ──────────────────────────────────────────────────────────
+
+async function testConnection(): Promise<void> {
+  if (isPgMode()) {
+    const pool = PgAdapter.getInstance().getPool();
+    await pool.query('SELECT 1');
+  } else {
     const { error } = await supabase.from('feeds').select('id').limit(1);
-
-    if (error) {
-      if (error.code === '42P01') {
-        console.error('Tables not found. Please create them in Supabase Dashboard.');
-        console.error('Run the SQL from schema.sql in the Supabase SQL Editor.');
-        throw new Error('Database tables not initialized');
-      }
+    if (error && error.code !== '42P01') {
+      // Ignore "table does not exist" — Supabase schema is managed externally
       throw error;
     }
-
-    console.log('Database connection verified successfully');
-  } catch (error) {
-    console.error('Failed to verify database connection:', error);
-    throw error;
   }
 }
 
+// ─── Migration Runner ─────────────────────────────────────────────────────────
+
+async function runMigrationsIfNeeded(): Promise<void> {
+  if (!isPgMode()) {
+    // Supabase path: schema is managed externally via Supabase Dashboard / SQL Editor
+    return;
+  }
+
+  const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), 'migrations');
+
+  await runner({
+    databaseUrl: process.env.DATABASE_URL!,
+    dir: migrationsDir,
+    direction: 'up',
+    migrationsTable: 'pgmigrations',
+    log: (msg: string) => logger.debug({ msg }, 'migration'),
+  });
+}
+
+// ─── Exponential Backoff Retry ────────────────────────────────────────────────
+
 /**
- * SQL to create tables in Supabase (run in SQL Editor):
+ * Initialize the database with exponential backoff retry (~30 seconds max).
  *
- * -- Feeds table
- * CREATE TABLE IF NOT EXISTS feeds (
- *   id TEXT PRIMARY KEY,
- *   slug TEXT UNIQUE NOT NULL,
- *   name TEXT NOT NULL,
- *   url TEXT,
- *   selectors TEXT,
- *   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
- *   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
- *   item_limit INTEGER DEFAULT 100
- * );
+ * pg path: tests connection, then runs pending node-pg-migrate migrations.
+ * Supabase path: pings feeds table to verify connectivity (schema managed externally).
  *
- * -- Items table
- * CREATE TABLE IF NOT EXISTS items (
- *   id TEXT PRIMARY KEY,
- *   feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
- *   title TEXT,
- *   link TEXT,
- *   description TEXT,
- *   pub_date TIMESTAMPTZ,
- *   guid TEXT UNIQUE,
- *   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
- * );
- *
- * -- Indexes
- * CREATE INDEX IF NOT EXISTS idx_items_feed_id ON items(feed_id);
- * CREATE INDEX IF NOT EXISTS idx_items_pub_date ON items(pub_date DESC);
- * CREATE INDEX IF NOT EXISTS idx_feeds_slug ON feeds(slug);
- *
- * -- Enable RLS (Row Level Security) - allow all for now
- * ALTER TABLE feeds ENABLE ROW LEVEL SECURITY;
- * ALTER TABLE items ENABLE ROW LEVEL SECURITY;
- *
- * -- Policies to allow all operations (single-user app)
- * CREATE POLICY "Allow all on feeds" ON feeds FOR ALL USING (true) WITH CHECK (true);
- * CREATE POLICY "Allow all on items" ON items FOR ALL USING (true) WITH CHECK (true);
- *
- * -- Phase 5: Add scheduling columns (run in Supabase SQL Editor)
- * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS refresh_interval_minutes INTEGER DEFAULT NULL;
- * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS next_refresh_at TIMESTAMPTZ DEFAULT NULL;
- * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS refresh_status TEXT DEFAULT 'idle';
- * ALTER TABLE feeds ADD COLUMN IF NOT EXISTS last_refresh_error TEXT DEFAULT NULL;
- *
- * -- Indexes for scheduling queries
- * CREATE INDEX IF NOT EXISTS idx_feeds_next_refresh ON feeds(next_refresh_at) WHERE next_refresh_at IS NOT NULL;
- * CREATE INDEX IF NOT EXISTS idx_feeds_refresh_status ON feeds(refresh_status);
- *
- * -- Column documentation
- * COMMENT ON COLUMN feeds.refresh_interval_minutes IS 'Refresh interval in minutes (NULL = manual only)';
- * COMMENT ON COLUMN feeds.next_refresh_at IS 'Next scheduled refresh time (NULL = no auto-refresh)';
- * COMMENT ON COLUMN feeds.refresh_status IS 'idle, refreshing, error';
- * COMMENT ON COLUMN feeds.last_refresh_error IS 'Error message from last failed refresh';
+ * On success, logs at debug level. On timeout, throws a user-readable error.
  */
+export async function initializeDatabase(): Promise<void> {
+  const startTime = Date.now();
+  let attempt = 0;
+  let lastError: unknown;
+
+  while (true) {
+    const elapsed = Date.now() - startTime;
+
+    if (elapsed >= MAX_WAIT_MS && attempt > 0) {
+      throw new Error(
+        'Database unreachable after 30s — check DATABASE_URL or SUPABASE_URL/SUPABASE_ANON_KEY',
+      );
+    }
+
+    try {
+      await testConnection();
+      await runMigrationsIfNeeded();
+
+      if (isPgMode()) {
+        logger.debug('Database initialized (pg Pool)');
+      } else {
+        logger.debug('Database initialized (Supabase)');
+      }
+      return;
+    } catch (err) {
+      lastError = err;
+      const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_WAIT_MS);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.debug(
+        { attempt, delayMs: delay, error: errMsg },
+        'Database connection failed, retrying',
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      attempt++;
+    }
+  }
+}

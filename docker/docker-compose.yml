@@ -1,0 +1,25 @@
+# Phase 7: PostgreSQL-only service definition.
+# The app service will be added in Phase 8 (Docker Infrastructure).
+# This file lives at docker/docker-compose.yml for now; Phase 8 will extend it at project root.
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: rssservice
+      POSTGRES_USER: rssuser
+      POSTGRES_PASSWORD: rsspassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rssuser -d rssservice"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
