@@ -15,10 +15,15 @@ services:
       retries: 10
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - homelab-network
     # Note: Port 5432 not exposed to host in production (internal-only)
 
   app:
     build: .
+    container_name: rss-service
+    networks:
+      - homelab-network
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
@@ -33,6 +38,10 @@ services:
         condition: service_healthy
     shm_size: '256mb'
     restart: unless-stopped
+
+networks:
+  homelab-network:
+    external: true
 
 volumes:
   postgres_data:

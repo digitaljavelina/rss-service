@@ -29,9 +29,9 @@ Create RSS feeds from anything. Point at any URL — website, YouTube channel, o
 ## Tech Stack
 
 - **Runtime:** Node.js + Express
-- **Database:** Supabase (PostgreSQL)
+- **Database:** PostgreSQL (Supabase or self-hosted)
 - **Styling:** Tailwind CSS v4 + daisyUI
-- **Hosting:** Vercel (serverless)
+- **Hosting:** Docker (self-hosted) or Vercel (serverless)
 - **Language:** TypeScript
 
 ## Getting Started
@@ -281,18 +281,53 @@ Called automatically by Vercel Cron. Refreshes due feeds (up to 5 per run) acros
 
 ## Deployment
 
-The Vercel deployment is configured with:
+### Docker (Self-Hosted)
+
+The recommended way to self-host. Includes PostgreSQL, headless Chromium, and in-process cron scheduling.
+
+```bash
+# Clone and configure
+git clone https://github.com/digitaljavelina/rss-service.git
+cd rss-service
+cp .env.docker.example .env.docker
+```
+
+Edit `.env.docker` with your settings:
+
+```
+POSTGRES_PASSWORD=your_secure_password
+BASE_URL=https://rss.yourdomain.com   # Your reverse proxy URL
+```
+
+```bash
+# Create the external network (if using a reverse proxy like Caddy)
+docker network create homelab-network
+
+# Start the service
+docker compose up -d --build
+
+# Check health
+curl http://localhost:3000/health
+```
+
+The compose file uses an external `homelab-network` network, making it easy to connect with a reverse proxy (Caddy, nginx, Traefik). If you don't need an external network, remove the `networks` sections from `docker-compose.yml` and Docker will create an internal one automatically.
+
+Auto-refresh runs in-process — no external cron needed.
+
+### Vercel (Serverless)
+
+Configured with:
 - **Memory:** 1024 MB (for headless browser)
 - **Max Duration:** 60 seconds (for browser-based fetching)
 
-### Auto-Refresh Setup
+### Auto-Refresh Setup (Vercel)
 
 Vercel Cron triggers the scheduler on a schedule configured in `vercel.json`. To enable auto-refresh in production:
 
 1. Generate a cron secret: `openssl rand -hex 32`
 2. Add `CRON_SECRET` to your Vercel Dashboard environment variables
 3. Vercel Hobby plan limits cron to once per day (`0 0 * * *`). Upgrade to Pro for higher frequency.
-4. **Self-hosted** (Docker, launchd, etc.) can call `/api/cron/scheduler` at any frequency with no limits
+4. **Self-hosted** (Docker) auto-refresh runs in-process with no limits
 
 ## License
 
