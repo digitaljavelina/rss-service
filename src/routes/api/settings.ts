@@ -106,7 +106,7 @@ settingsApiRouter.put('/:key', async (req: Request, res: Response): Promise<void
     res.json({
       success: true,
       key,
-      value: SENSITIVE_KEYS.has(key) ? maskValue(trimmedValue) : trimmedValue,
+      value: SENSITIVE_KEYS.has(String(key)) ? maskValue(trimmedValue) : trimmedValue,
     });
   } catch (error) {
     console.error('Save setting error:', error);
