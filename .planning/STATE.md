@@ -5,19 +5,19 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** Create RSS feeds from anything. Point at any URL, auto-detect content patterns, and get a feed you can subscribe to in your reader.
-**Current focus:** v1.1 Docker & Self-Hosting — Phase 7: Database Abstraction Layer
+**Current focus:** v1.1 Docker & Self-Hosting — Phase 8: Docker Infrastructure
 
 ---
 
 ## Current Position
 
 **Milestone:** v1.1 Docker & Self-Hosting
-**Phase:** 7 of 10 (Database Abstraction Layer)
+**Phase:** 8 of 10 (Docker Infrastructure)
 **Plan:** 2 of 2 in current phase (phase complete)
-**Status:** Milestone complete
-**Last activity:** 2026-02-19 — Phase 7 Plan 02 complete (migration system + Docker init + startup retry)
+**Status:** Ready for Phase 9
+**Last activity:** 2026-02-19 — Phase 8 complete (Dockerfile, compose, health endpoint, SIGTERM, Chromium path)
 
-Progress: [██░░░░░░░░] 20% (v1.1)
+Progress: [████░░░░░░] 40% (v1.1)
 
 ---
 
@@ -40,11 +40,14 @@ v1.1 decisions to track:
 - 07-02: Exponential backoff: 500ms base, doubles per attempt, 30s max total before throwing user-readable error
 - 07-02: Migration dir resolved via fileURLToPath+dirname+join (ESM-safe, works in tsx dev and compiled dist/)
 - 07-02: Docker init-scripts are separate file copies (not symlinks) — Docker build context anti-pattern avoidance
+- 08-01: Production postgres port NOT exposed to host (internal-only networking)
+- 08-01: shm_size 256mb for Chromium stability; HEALTHCHECK uses inline Node.js (no curl)
+- 08-02: Signal handlers registered SYNCHRONOUSLY at module level (not inside async startServer)
+- 08-02: 10s shutdown timeout prevents container hanging; --no-sandbox required in Docker even as non-root
 
 ### Open Questions
 
-- Chromium version compatibility: `puppeteer-core@24.37.3` expected revision vs Debian Bookworm system Chromium. Test `/usr/bin/chromium --version` during Phase 8; fall back to Google Chrome apt repo if mismatch.
-- ~~Supabase query surface area: audit `src/routes/` and `src/db/` before starting Phase 7 to count distinct query patterns~~ — Resolved: 14 distinct operation shapes, all implemented in pg-adapter.ts
+- Chromium version compatibility: `puppeteer-core@24.37.3` expected revision vs Debian Bookworm system Chromium. Test `/usr/bin/chromium --version` during Phase 10 verification.
 
 ### Active Todos
 
@@ -58,17 +61,18 @@ v1.1 decisions to track:
 
 ## Session Continuity
 
-**Last Session:** 2026-02-19T01:32:53Z
-**Stopped at:** Completed 07-02-PLAN.md (Phase 7 complete)
-**Resume file:** .planning/phases/07-database-abstraction-layer/07-02-SUMMARY.md
+**Last Session:** 2026-02-19
+**Stopped at:** Completed Phase 8 (Docker Infrastructure)
+**Resume file:** .planning/phases/08-docker-infrastructure/08-02-SUMMARY.md
 
 **Context for Next Session:**
 - v1.0 MVP shipped (Vercel + Supabase, production URL: https://rss-service-five.vercel.app/)
 - v1.1 adds Docker self-hosting: bundled PostgreSQL, real cron, system Chromium
 - Phase 7 COMPLETE: pg adapter (01) + migration system (02) fully operational
-- Next: Phase 8 (Docker Infrastructure) — extend docker/docker-compose.yml with app service, Dockerfile, CI build
-- docker/docker-compose.yml has postgres:16-bookworm service ready; Phase 8 extends with app service at project root
+- Phase 8 COMPLETE: Dockerfile, docker-compose.yml, .dockerignore, .env.docker.example, /health endpoint, SIGTERM handler, Chromium path
+- Next: Phase 9 (In-Process Cron Scheduling) — node-cron fires feed refreshes at configured intervals
+- cronTask placeholder in src/server.ts ready for Phase 9 wiring
 
 ---
 
-*Last updated: 2026-02-19 (Phase 7 Plan 02 complete — Phase 7 done)*
+*Last updated: 2026-02-19 (Phase 8 complete)*
