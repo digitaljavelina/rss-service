@@ -50,11 +50,16 @@ RUN npm ci --omit=dev
 # Copy compiled JS from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy database migrations (SQL files not included in tsc output)
+COPY src/db/migrations ./dist/db/migrations
+RUN chmod -R 755 ./dist/db/migrations
+
 # Copy static assets (CSS, JS, images referenced by express.static('public'))
 COPY public ./public
 
-# Create non-root user for security
-RUN groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser
+# Create non-root user for security and set ownership
+RUN groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser \
+    && chown -R pptruser:pptruser /app
 USER pptruser
 
 # Environment configuration

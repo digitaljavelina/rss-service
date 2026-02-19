@@ -146,6 +146,28 @@ export class QueryBuilder<T = Record<string, unknown>> {
     return this;
   }
 
+  /**
+   * Less than or equal: WHERE col <= $N
+   */
+  lte(column: string, value: unknown): this {
+    this._values.push(value);
+    this._filters.push(`${column} <= $${this._values.length}`);
+    return this;
+  }
+
+  /**
+   * NOT filter: WHERE NOT (col operator value)
+   * Supports 'is' operator for NULL checks: .not('col', 'is', null)
+   */
+  not(column: string, operator: string, value: unknown): this {
+    if (operator === 'is' && value === null) {
+      this._filters.push(`${column} IS NOT NULL`);
+    } else {
+      logger.warn({ column, operator, value }, 'pg-adapter: unsupported NOT operator');
+    }
+    return this;
+  }
+
   order(column: string, options?: OrderOptions): this {
     this._orderCol = column;
     this._orderAsc = options?.ascending !== false;
@@ -434,7 +456,7 @@ export class PgAdapter {
       connectionString,
       max: 10,
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 2_000,
+      connectionTimeoutMillis: 5_000, // 5s for Docker startup timing
     });
 
     // Pitfall 1: must handle pool error events or process crashes on idle client failures
