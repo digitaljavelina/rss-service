@@ -64,25 +64,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CNTR-01 | — | Pending |
-| CNTR-02 | — | Pending |
-| CNTR-03 | — | Pending |
-| CNTR-04 | — | Pending |
-| CNTR-05 | — | Pending |
-| DB-01 | — | Pending |
-| DB-02 | — | Pending |
-| HLTH-01 | — | Pending |
-| HLTH-02 | — | Pending |
-| HLTH-03 | — | Pending |
-| HLTH-04 | — | Pending |
-| CRON-01 | — | Pending |
-| BRWS-01 | — | Pending |
+| CNTR-01 | Phase 8 | Pending |
+| CNTR-02 | Phase 8 | Pending |
+| CNTR-03 | Phase 8 | Pending |
+| CNTR-04 | Phase 8 | Pending |
+| CNTR-05 | Phase 8 | Pending |
+| DB-01 | Phase 7 | Pending |
+| DB-02 | Phase 7 | Pending |
+| HLTH-01 | Phase 8 | Pending |
+| HLTH-02 | Phase 8 | Pending |
+| HLTH-03 | Phase 8 | Pending |
+| HLTH-04 | Phase 8 | Pending |
+| CRON-01 | Phase 9 | Pending |
+| BRWS-01 | Phase 8 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 (pending roadmap creation)
+- Mapped to phases: 13
+- Unmapped: 0
+
+**Note:** Phase 10 (Verification) owns no requirements exclusively — it exercises all 13 requirements end-to-end to confirm the system works as a whole. This is intentional: a verification phase validates prior phases, not new requirements.
 
 ---
 *Requirements defined: 2026-02-18*
-*Last updated: 2026-02-18 after initial definition*
+*Last updated: 2026-02-18 (traceability updated after roadmap creation)*
