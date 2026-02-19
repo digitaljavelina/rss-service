@@ -53,7 +53,9 @@
   3. Sending SIGTERM to the container causes it to finish in-flight requests, stop the scheduler, close the DB pool, and exit cleanly — confirmed via `docker stop` with no error logs
   4. Headless browser feed extraction works inside the container — a JavaScript-heavy site produces extracted items without crashing Chromium
   5. `.env.docker.example` documents every required environment variable so a new user can configure the deployment without reading source code
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 08-01-PLAN.md — Container foundation: Dockerfile, docker-compose.yml, .dockerignore, .env.docker.example
+  - [ ] 08-02-PLAN.md — Runtime wiring: /health endpoint, SIGTERM handler, Chromium path, port fix
 
 ### Phase 9: In-Process Cron Scheduling
 **Goal**: Feeds refresh automatically inside the Docker container at their configured intervals, with no external cron trigger required
@@ -87,7 +89,7 @@
 | 5. Automation & Scheduling | v1.0 | 5/5 | Complete | 2026-02-18 |
 | 6. Platform Integrations | v1.0 | 5/5 | Complete | 2026-02-18 |
 | 7. Database Abstraction Layer | 2/2 | Complete   | 2026-02-19 | - |
-| 8. Docker Infrastructure | v1.1 | 0/TBD | Not started | - |
+| 8. Docker Infrastructure | v1.1 | 0/2 | Not started | - |
 | 9. In-Process Cron Scheduling | v1.1 | 0/TBD | Not started | - |
 | 10. Verification and Dual-Deployment Parity | v1.1 | 0/TBD | Not started | - |
 
