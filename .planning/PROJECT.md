@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A local web application that generates RSS feeds from any website or service that doesn't natively offer one — similar to rss.app but running entirely on your machine.
+A self-hosted RSS feed generator that creates feeds from any website, YouTube channel, or Reddit subreddit — deployed to Vercel with a Supabase backend.
 
 ## Core Value
 
-**Create RSS feeds from anything.** Point at any URL, select what content matters, and get a feed you can subscribe to in your reader.
+**Create RSS feeds from anything.** Point at any URL, auto-detect content patterns, and get a feed you can subscribe to in your reader.
 
 ## The Problem
 
@@ -15,85 +15,106 @@ Many websites and social platforms don't provide RSS feeds, making it hard to fo
 ## The Solution
 
 A self-hosted RSS feed generator with:
-- **Visual element selector** — click on page elements to define what becomes feed items
-- **Multiple selection modes** — auto-detect, click-to-select, or CSS selectors for power users
-- **Social platform integrations** — YouTube, Twitter, Reddit, etc. via official APIs
-- **Smart caching** — configurable refresh intervals, background polling
+- **Auto-detection** — paste a URL and the system finds content patterns automatically
+- **Headless browser** — automatic fallback for JavaScript-heavy sites
+- **Platform integrations** — YouTube via Data API v3, Reddit via built-in RSS
+- **Smart scheduling** — configurable per-feed refresh intervals with cron-based updates
+- **Feed management** — dashboard with edit, delete, export/import
 - **Clean UI** — uncluttered, easy to navigate, no feature bloat
 
 ## How It Works
 
 1. Paste a URL into the web interface
-2. App loads the page and presents selection options:
-   - Auto-detect (for common patterns)
-   - Visual selector (click elements directly)
-   - CSS selector input (for precise control)
-3. Configure refresh schedule (every 15min, hourly, daily, etc.)
-4. Get a localhost RSS URL to add to your reader
-5. Optionally export as static XML file
+2. System auto-detects content patterns (or uses platform API for YouTube/Reddit)
+3. Preview extracted items before saving
+4. Configure refresh schedule (every 15min, hourly, daily, etc.)
+5. Get an RSS URL to add to your reader
+6. Optionally export as static XML file
 
 ## Target User
 
-You. Someone who:
+Someone who:
 - Uses an RSS reader as their primary way to follow content
 - Wants to follow sites/accounts that don't offer RSS
-- Prefers local, self-hosted tools over cloud services
+- Prefers self-hosted tools over cloud services
 - Values a clean, functional interface
 
 ## Constraints
 
-- **Local only** — runs on localhost, no cloud deployment needed
-- **Mac-first** — running on macOS (Darwin), potential native app later
-- **API keys required** — social platform integrations need user-provided credentials
+- **Vercel deployment** — serverless functions, daily cron on Hobby plan
+- **Supabase backend** — PostgreSQL database, free tier sufficient
+- **API keys required** — YouTube integration needs user-provided credentials
 - **Single user** — no auth/multi-user complexity
 
 ## Technical Direction
 
-- **Web UI** — localhost web app (browser-based)
-- **Storage** — SQLite (zero setup, easy backup, single file)
-- **Background jobs** — scheduler for polling feeds on configured intervals
-- **Feed serving** — local server serves RSS XML at localhost URLs
-- **Export** — generate static XML files on demand
+- **Stack:** TypeScript, Express, Supabase (PostgreSQL), Vercel serverless
+- **Frontend:** EJS templates, Tailwind CSS v4 + daisyUI, Alpine.js
+- **Extraction:** Cheerio (static), Puppeteer with @sparticuz/chromium (JS-heavy)
+- **Scheduling:** Vercel cron → `/api/cron/scheduler` endpoint
+- **Feed serving:** Express routes serve RSS XML at `/feeds/:slug`
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Create RSS feed from any URL via content extraction — v1.0
+- ✓ Auto-detect common content patterns — v1.0
+- ✓ Preview extracted content before saving — v1.0
+- ✓ Generate valid RSS 2.0 and Atom feeds — v1.0
+- ✓ Headless browser for JavaScript-heavy pages — v1.0
+- ✓ YouTube integration via Data API v3 — v1.0
+- ✓ Reddit integration via built-in RSS — v1.0
+- ✓ Configurable per-feed refresh intervals — v1.0
+- ✓ Background cron-based feed updates — v1.0
+- ✓ Serve feeds at public URLs — v1.0
+- ✓ Export feeds as static XML files — v1.0
+- ✓ Clean, uncluttered web UI — v1.0
+- ✓ Feed management dashboard (list, edit, delete) — v1.0
+- ✓ Feed export/import (JSON backup) — v1.0
+- ✓ Content deduplication via SHA-256 GUIDs — v1.0
+- ✓ API key management via settings page — v1.0
+- ✓ Rate limit handling with backoff — v1.0
+- ✓ Cache-Control + ETag for feed serving — v1.0
 
 ### Active
 
-- [ ] Create RSS feed from any URL via content extraction
-- [ ] Visual element selector (click page elements to define feed items)
-- [ ] CSS selector input for precise control
-- [ ] Auto-detect common content patterns
-- [ ] YouTube integration via API
-- [ ] Twitter/X integration via API
-- [ ] Reddit integration via API
-- [ ] Configurable refresh intervals per feed
-- [ ] Background polling on schedule
-- [ ] Serve feeds at localhost URLs
-- [ ] Export feeds as static XML files
-- [ ] Clean, uncluttered web UI
-- [ ] Feed management dashboard (list, edit, delete feeds)
+(None — ship to validate next milestone)
 
 ### Out of Scope
 
-- Cloud deployment — this is local-only
+- Twitter/X integration — API costs $100+/month for read access, impractical for free tool
+- Cloud deployment — runs on Vercel free tier, no enterprise hosting
 - Multi-user/authentication — single user tool
-- Native Mac app — web-first, maybe later
-- Feed aggregation/bundling — keep it simple for v1
+- Native Mac app — web-first, works well as-is
+- Feed aggregation/bundling — keep it simple
 - Keyword filtering — v2 consideration
 - Translation features — v2 consideration
+- Offline mode — real-time/scheduled is core value
+
+## Context
+
+Shipped v1.0 with 5,198 LOC (TypeScript/JavaScript/EJS).
+Tech stack: Express + Vercel serverless, Supabase (PostgreSQL), Cheerio + Puppeteer.
+Production URL: https://rss-service-five.vercel.app/
+Database: Supabase with feeds, items, and settings tables.
+Cron: daily at midnight UTC (Vercel Hobby plan limit).
+103 commits across 3 days of development.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Web app over native | Faster to build, browser already has good dev tools, native can come later | — Pending |
-| SQLite over PostgreSQL | Zero setup, single file, plenty capable for local single-user use | — Pending |
-| Official APIs over scraping | More reliable, respects platform terms, worth the key setup | — Pending |
-| Visual selector + CSS fallback | Easy path for simple cases, power tools when needed | — Pending |
+| Web app over native | Faster to build, browser dev tools, native can come later | ✓ Good — shipped in 3 days |
+| SQLite → Supabase | Required for Vercel serverless deployment | ✓ Good — zero-config, free tier |
+| Auto-detection over CSS selectors | Better UX, users don't need to understand CSS | ✓ Good — works for most sites |
+| Headless browser auto-fallback | No manual toggle, system detects JS-heavy pages | ✓ Good — transparent to users |
+| Skip Twitter/X | API costs $100+/month for read access | ✓ Good — saved cost, focused on free APIs |
+| Reddit built-in RSS over API | No API key needed, simpler and more reliable | ✓ Good — zero config for users |
+| YouTube uploads playlist trick | UC→UU channelId trick: 1 quota unit vs 100 for search | ✓ Good — 100x more efficient |
+| Daily cron for Vercel Hobby | Hobby plan limits to once/day; all intervals preserved for self-hosted/Pro | ⚠️ Revisit — upgrade to Pro for real-time |
+| Content-based GUIDs (SHA-256) | Deduplication across extractions without centralized ID tracking | ✓ Good — no duplicate items |
+| feed_type column routing | Routes preview/create/refresh/cron by feed_type | ✓ Good — clean extensibility |
 
 ---
-*Last updated: 2026-02-16 after initialization*
+*Last updated: 2026-02-18 after v1.0 milestone*
