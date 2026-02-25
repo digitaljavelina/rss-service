@@ -138,9 +138,15 @@ async function refreshFeed(feed: FeedRow): Promise<{ newItems: number }> {
     });
   }
 
-  // Insert new items
+  // Insert new items (ON CONFLICT DO NOTHING handles any race-condition duplicates)
   if (newItemRows.length > 0) {
-    await supabase.from('items').insert(newItemRows);
+    const { error: insertError } = await supabase
+      .from('items')
+      .insert(newItemRows, { onConflict: 'guid' } as any);
+
+    if (insertError) {
+      logger.warn({ err: insertError, feedId: feed.id }, 'Scheduler: item insert had errors');
+    }
   }
 
   // Enforce item limit - delete oldest items if over limit
@@ -296,6 +302,27 @@ export async function refreshDueFeeds(): Promise<{
  *
  * Returns the ScheduledTask so it can be stopped on shutdown.
  */
+/**
+ * Reset feeds stuck in 'refreshing' status back to 'idle'.
+ * This handles the case where the app crashed mid-refresh.
+ */
+async function recoverStaleFeeds(): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('feeds')
+      .update({ refresh_status: 'idle', last_refresh_error: 'Recovered from stale refreshing state (app restart)' })
+      .eq('refresh_status', 'refreshing');
+
+    if (error) {
+      logger.error({ err: error }, 'Scheduler: failed to recover stale feeds');
+    } else {
+      logger.info('Scheduler: recovered any feeds stuck in refreshing state');
+    }
+  } catch (err) {
+    logger.error({ err }, 'Scheduler: stale feed recovery failed');
+  }
+}
+
 export function startScheduler(): { stop: () => void } | null {
   if (!isPgMode()) {
     logger.info('Scheduler: skipping in-process cron (Supabase mode uses Vercel cron)');
@@ -303,6 +330,9 @@ export function startScheduler(): { stop: () => void } | null {
   }
 
   logger.info({ cron: CRON_EXPRESSION }, 'Scheduler: starting in-process cron');
+
+  // Recover feeds stuck in 'refreshing' from a previous crash
+  recoverStaleFeeds();
 
   const task = cron.schedule(CRON_EXPRESSION, async () => {
     try {

@@ -242,7 +242,7 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Insert items
+    // Insert items (ON CONFLICT DO NOTHING handles any duplicate GUIDs)
     let itemCount = 0;
     if (extractedItems.length > 0) {
       const { error: itemsError } = await supabase.from('items').insert(
@@ -254,7 +254,8 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
           description: item.description || null,
           pub_date: item.pubDate?.toISOString() || new Date().toISOString(),
           guid: generateGuid(feedId, item),
-        }))
+        })),
+        { onConflict: 'guid' } as any
       );
 
       if (itemsError) {
@@ -285,7 +286,7 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
         .filter((item) => !existingGuids.has(item.guid));
 
       if (importedItems.length > 0) {
-        await supabase.from('items').insert(
+        const { error: importError } = await supabase.from('items').insert(
           importedItems.map((item) => ({
             id: nanoid(),
             feed_id: feedId,
@@ -294,9 +295,15 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
             description: item.description || null,
             pub_date: item.pubDate || new Date().toISOString(),
             guid: item.guid,
-          }))
+          })),
+          { onConflict: 'guid' } as any
         );
-        itemCount += importedItems.length;
+
+        if (importError) {
+          console.error('Error inserting imported items:', importError);
+        } else {
+          itemCount += importedItems.length;
+        }
       }
     }
 
@@ -585,9 +592,15 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
       }
     }
 
-    // Insert new items
+    // Insert new items (ON CONFLICT DO NOTHING handles race-condition duplicates)
     if (newItems.length > 0) {
-      await supabase.from('items').insert(newItems);
+      const { error: insertError } = await supabase
+        .from('items')
+        .insert(newItems, { onConflict: 'guid' } as any);
+
+      if (insertError) {
+        console.error('Error inserting items during refresh:', insertError);
+      }
     }
 
     // Enforce item limit - delete oldest items if over limit
@@ -768,7 +781,7 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
       }));
 
       if (itemsWithDates.length > 0) {
-        await supabase.from('items').insert(
+        const { error: reInsertError } = await supabase.from('items').insert(
           itemsWithDates.map((item) => ({
             id: nanoid(),
             feed_id: feedRow.id,
@@ -777,8 +790,13 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
             description: item.description || null,
             pub_date: item.pubDate?.toISOString() || new Date().toISOString(),
             guid: generateGuid(feedRow.id, item),
-          }))
+          })),
+          { onConflict: 'guid' } as any
         );
+
+        if (reInsertError) {
+          console.error('Error re-inserting items after URL change:', reInsertError);
+        }
       }
     } else {
       updateData.url = feedRow.url;

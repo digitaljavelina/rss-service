@@ -35,18 +35,19 @@ export interface DbResultMany<T> {
 
 function normalizePgError(err: unknown): DbError {
   if (err instanceof Error) {
-    const pgErr = err as NodeJS.ErrnoException & { code?: string };
+    const pgErr = err as NodeJS.ErrnoException & { code?: string; detail?: string };
     if (pgErr.code === 'ECONNREFUSED' || pgErr.code === 'ETIMEDOUT') {
-      return { code: 'database_unavailable', message: 'Database is not reachable' };
+      return { code: 'database_unavailable', message: `Database is not reachable: ${pgErr.message}` };
     }
     if (pgErr.code === '23505') {
-      return { code: 'conflict', message: 'A record with this identifier already exists' };
+      return { code: 'conflict', message: `A record with this identifier already exists: ${pgErr.detail || pgErr.message}` };
     }
     if (pgErr.code === '42P01') {
-      return { code: 'schema_error', message: 'Required database table does not exist' };
+      return { code: 'schema_error', message: `Required database table does not exist: ${pgErr.message}` };
     }
+    return { code: 'query_failed', message: `Database operation failed: ${pgErr.message}` };
   }
-  return { code: 'query_failed', message: 'Database operation failed' };
+  return { code: 'query_failed', message: `Database operation failed: ${String(err)}` };
 }
 
 // ─── Query Builder ───────────────────────────────────────────────────────────
@@ -78,6 +79,7 @@ export class QueryBuilder<T = Record<string, unknown>> {
   private _updateData: Record<string, unknown> | null = null;
   private _upsertData: Record<string, unknown> | null = null;
   private _upsertOptions: UpsertOptions | null = null;
+  private _onConflictIgnore: string | null = null;
   private _returning: boolean = false;
   private _singleMode: boolean = false;
 
@@ -186,9 +188,15 @@ export class QueryBuilder<T = Record<string, unknown>> {
 
   // ─── Terminal Mutating Operations ─────────────────────────────────────────
 
-  insert(data: Record<string, unknown> | Record<string, unknown>[]): Promise<DbResult<null>> {
+  insert(
+    data: Record<string, unknown> | Record<string, unknown>[],
+    options?: { onConflict?: string }
+  ): Promise<DbResult<null>> {
     this._operation = 'insert';
     this._insertData = data;
+    if (options?.onConflict) {
+      this._onConflictIgnore = options.onConflict;
+    }
     return this._executeInsert();
   }
 
@@ -324,7 +332,10 @@ export class QueryBuilder<T = Record<string, unknown>> {
         }
       }
 
-      const sql = `INSERT INTO ${this.table} (${colList}) VALUES ${valueClauses.join(', ')}`;
+      let sql = `INSERT INTO ${this.table} (${colList}) VALUES ${valueClauses.join(', ')}`;
+      if (this._onConflictIgnore) {
+        sql += ` ON CONFLICT (${this._onConflictIgnore}) DO NOTHING`;
+      }
       this._debugLog(sql, allValues);
       await this.pool.query(sql, allValues);
       return { data: null, error: null };
