@@ -189,15 +189,22 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     const staticResult = await fetchPage(body.url);
     let usedHeadless = false;
 
+    // If static fetch fails (e.g. 429 from Cloudflare), try headless browser before giving up
+    let html: string;
     if (!staticResult.ok || !staticResult.html) {
-      res.status(400).json({
-        success: false,
-        errors: [`Failed to fetch: ${staticResult.error || 'Unknown error'}`],
-      } as PreviewResponse);
-      return;
+      const headlessResult = await fetchPageWithBrowser(body.url);
+      if (!headlessResult.ok || !headlessResult.html) {
+        res.status(400).json({
+          success: false,
+          errors: [`Failed to fetch: ${staticResult.error || 'Unknown error'}`],
+        } as PreviewResponse);
+        return;
+      }
+      html = headlessResult.html;
+      usedHeadless = true;
+    } else {
+      html = staticResult.html;
     }
-
-    let html = staticResult.html;
 
     // Check if page likely needs JS rendering
     const needsHeadless = likelyNeedsJavaScript(html);
@@ -206,7 +213,7 @@ previewRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     let extraction = autoExtractItems(html, body.url, body.selectors);
 
     // If no items found and page likely needs JS, automatically retry with headless browser
-    if ((!extraction || extraction.items.length === 0) && needsHeadless) {
+    if ((!extraction || extraction.items.length === 0) && needsHeadless && !usedHeadless) {
       const headlessResult = await fetchPageWithBrowser(body.url);
       if (headlessResult.ok && headlessResult.html) {
         html = headlessResult.html;

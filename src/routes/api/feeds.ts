@@ -189,9 +189,14 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       // Web: existing scraping flow
       const useHeadless = body.useHeadless === true;
 
-      const fetchResult = useHeadless
+      let fetchResult = useHeadless
         ? await fetchPageWithBrowser(body.url)
         : await fetchPage(body.url);
+
+      // If static fetch fails (e.g. 429), try headless browser before giving up
+      if (!fetchResult.ok && !useHeadless) {
+        fetchResult = await fetchPageWithBrowser(body.url);
+      }
 
       if (!fetchResult.ok || !fetchResult.html) {
         res.status(400).json({
@@ -529,9 +534,14 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
 
       const useHeadless = selectors?.useHeadless === true;
 
-      const fetchResult = useHeadless
+      let fetchResult = useHeadless
         ? await fetchPageWithBrowser(feedRow.url || '')
         : await fetchPage(feedRow.url || '');
+
+      // If static fetch fails (e.g. 429), try headless browser before giving up
+      if (!fetchResult.ok && !useHeadless) {
+        fetchResult = await fetchPageWithBrowser(feedRow.url || '');
+      }
 
       if (!fetchResult.ok || !fetchResult.html) {
         res.status(400).json({
@@ -739,9 +749,14 @@ feedsApiRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
 
     if (urlChanged && newUrl) {
       // Fetch new URL and re-detect selectors (use headless if feed was created with it)
-      const fetchResult = useHeadless
+      let fetchResult = useHeadless
         ? await fetchPageWithBrowser(newUrl)
         : await fetchPage(newUrl);
+
+      // If static fetch fails (e.g. 429), try headless browser before giving up
+      if (!fetchResult.ok && !useHeadless) {
+        fetchResult = await fetchPageWithBrowser(newUrl);
+      }
 
       if (!fetchResult.ok || !fetchResult.html) {
         res.status(400).json({
