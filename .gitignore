@@ -30,3 +30,4 @@ Thumbs.db
 npm-debug.log*
 .vercel
 .env*.local
+._.DS_Store
