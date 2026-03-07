@@ -34,7 +34,7 @@ settingsApiRouter.get('/', async (_req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const settings = (data || []).map((row) => ({
+    const settings = (data || []).map((row: any) => ({
       key: row.key,
       value: SENSITIVE_KEYS.has(row.key) ? maskValue(row.value) : row.value,
       configured: true,

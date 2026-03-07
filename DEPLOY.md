@@ -96,38 +96,10 @@ docker compose up --build -d
 
 ---
 
-## Vercel + Supabase Deployment
-
-The app also supports deployment to Vercel with Supabase as the database.
-
-### Prerequisites
-
-- Vercel account
-- Supabase project
-
-### Setup
-
-1. Create a Supabase project and run the schema from `src/db/migrations/001_initial_schema.sql`
-
-2. Deploy to Vercel:
-   ```bash
-   vercel
-   ```
-
-3. Set environment variables in Vercel:
-   - `SUPABASE_URL` - Your Supabase project URL
-   - `SUPABASE_ANON_KEY` - Your Supabase anon key
-   - `BASE_URL` - Your Vercel deployment URL
-
-4. Set up Vercel Cron for scheduled feed refreshes (see `vercel.json`)
-
----
-
 ## Architecture
 
-| Deployment | Database | Cron | Browser |
-|------------|----------|------|---------|
-| Docker | PostgreSQL (bundled) | In-process (node-cron) | System Chromium |
-| Vercel | Supabase | Vercel Cron | @sparticuz/chromium |
-
-Both deployments use the same codebase - the app auto-detects which mode to use based on the presence of `DATABASE_URL`.
+| Component | Technology |
+|-----------|-----------|
+| Database | PostgreSQL (bundled via Docker Compose) |
+| Cron | In-process (node-cron) |
+| Browser | System Chromium (headless) |

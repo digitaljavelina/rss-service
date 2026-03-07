@@ -11,31 +11,14 @@ let browserInstance: Browser | null = null;
 
 /**
  * Get or create a browser instance (lazy singleton)
- * Reuses existing browser in warm serverless instances
  */
 async function getBrowser(): Promise<Browser> {
   if (browserInstance && browserInstance.connected) {
     return browserInstance;
   }
 
-  // Check if running on Vercel (production) or local dev
-  const isVercel = !!process.env.VERCEL;
-
-  if (isVercel) {
-    // Production: use @sparticuz/chromium
-    const chromium = await import('@sparticuz/chromium');
-    const puppeteer = await import('puppeteer-core');
-
-    // Disable GPU for serverless environment
-    chromium.default.setGraphicsMode = false;
-
-    browserInstance = await puppeteer.default.launch({
-      args: chromium.default.args,
-      executablePath: await chromium.default.executablePath(),
-      headless: 'shell',
-    });
-  } else if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    // Docker: system Chromium installed via apt (Debian Bookworm)
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    // Docker / production: system Chromium installed via apt
     // --no-sandbox required even as non-root in containers (kernel namespace constraint)
     // --disable-dev-shm-usage falls back to /tmp (safety net alongside shm_size: 256mb)
     const puppeteer = await import('puppeteer-core');

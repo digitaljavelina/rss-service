@@ -277,7 +277,7 @@ feedsApiRouter.post('/', async (req: Request, res: Response): Promise<void> => {
         .select('guid')
         .eq('feed_id', feedId);
 
-      const existingGuids = new Set(existingItems?.map((i) => i.guid) || []);
+      const existingGuids = new Set(existingItems?.map((i: any) => i.guid) || []);
 
       const importedItems = body.items
         .filter((item) => item.title && item.link)
@@ -345,7 +345,7 @@ feedsApiRouter.get('/', async (_req: Request, res: Response): Promise<void> => {
 
     // Get item counts for each feed
     const feedsWithCounts = await Promise.all(
-      (feeds || []).map(async (feed) => {
+      (feeds || []).map(async (feed: any) => {
         const { count } = await supabase
           .from('items')
           .select('*', { count: 'exact', head: true })
@@ -446,7 +446,7 @@ feedsApiRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
         .eq('feed_id', feedRow.id)
         .order('pub_date', { ascending: false });
 
-      result.items = (items || []).map((item) => ({
+      result.items = (items || []).map((item: any) => ({
         title: item.title,
         link: item.link,
         description: item.description,
@@ -569,7 +569,7 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
       .select('guid')
       .eq('feed_id', feedRow.id);
 
-    const existingGuids = new Set(existingItems?.map((i) => i.guid) || []);
+    const existingGuids = new Set(existingItems?.map((i: any) => i.guid) || []);
 
     // Filter to new items only and prepare for insert
     const newItems: Array<{
@@ -634,7 +634,7 @@ feedsApiRouter.post('/:id/refresh', async (req: Request, res: Response): Promise
           .delete()
           .in(
             'id',
-            oldItems.map((i) => i.id)
+            oldItems.map((i: any) => i.id)
           );
       }
     }

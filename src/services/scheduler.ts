@@ -1,18 +1,14 @@
 /**
  * Feed Scheduler Service
  *
- * Shared scheduling logic used by:
- * 1. Docker: in-process node-cron (this module's startScheduler)
- * 2. Vercel: api/cron/scheduler.ts HTTP handler (imports refreshDueFeeds)
- *
- * Uses the unified supabase proxy, so works with both pg and Supabase backends.
+ * In-process node-cron that checks every minute for feeds due to refresh.
  */
 
 import cron from 'node-cron';
 import { createHash } from 'crypto';
 import { nanoid } from 'nanoid';
 import pino from 'pino';
-import { supabase, isPgMode } from '../db/index.js';
+import { supabase } from '../db/index.js';
 import { fetchPage } from './page-fetcher.js';
 import { fetchPageWithBrowser } from './page-fetcher-browser.js';
 import { autoExtractItems } from './auto-detector.js';
@@ -297,12 +293,6 @@ export async function refreshDueFeeds(): Promise<{
 }
 
 /**
- * Start the in-process cron scheduler.
- * Only starts in pg mode (Docker); no-op in Supabase mode (Vercel handles cron externally).
- *
- * Returns the ScheduledTask so it can be stopped on shutdown.
- */
-/**
  * Reset feeds stuck in 'refreshing' status back to 'idle'.
  * This handles the case where the app crashed mid-refresh.
  */
@@ -323,12 +313,11 @@ async function recoverStaleFeeds(): Promise<void> {
   }
 }
 
-export function startScheduler(): { stop: () => void } | null {
-  if (!isPgMode()) {
-    logger.info('Scheduler: skipping in-process cron (Supabase mode uses Vercel cron)');
-    return null;
-  }
-
+/**
+ * Start the in-process cron scheduler.
+ * Returns the ScheduledTask so it can be stopped on shutdown.
+ */
+export function startScheduler(): { stop: () => void } {
   logger.info({ cron: CRON_EXPRESSION }, 'Scheduler: starting in-process cron');
 
   // Recover feeds stuck in 'refreshing' from a previous crash

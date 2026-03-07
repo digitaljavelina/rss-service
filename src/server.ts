@@ -2,7 +2,6 @@ import 'dotenv/config';
 import http from 'http';
 import { app } from './app.js';
 import { initializeDatabase } from './db/schema.js';
-import { isPgMode } from './db/index.js';
 import { PgAdapter } from './db/pg-adapter.js';
 import { startScheduler } from './services/scheduler.js';
 import pino from 'pino';
@@ -32,11 +31,9 @@ async function shutdown(signal: string): Promise<void> {
   server.close(async () => {
     logger.info('HTTP server closed');
 
-    // 3. Close DB pool if using pg
-    if (isPgMode()) {
-      await PgAdapter.getInstance().shutdown();
-      logger.info('DB pool closed');
-    }
+    // 3. Close DB pool
+    await PgAdapter.getInstance().shutdown();
+    logger.info('DB pool closed');
 
     process.exit(0);
   });
@@ -62,7 +59,7 @@ async function startServer(): Promise<void> {
     server.listen(port, () => {
       logger.info({ port }, 'RSS Service running');
 
-      // Start in-process cron scheduler (only in pg/Docker mode)
+      // Start in-process cron scheduler
       cronTask = startScheduler();
     });
   } catch (error) {

@@ -2,10 +2,6 @@
 
 Create RSS feeds from anything. Point at any URL — website, YouTube channel, or subreddit — and get a feed you can subscribe to in your reader.
 
-## Live Demo
-
-**Production:** https://rss-service-five.vercel.app/
-
 ## Features
 
 - **URL to RSS** - Turn any webpage into an RSS feed
@@ -31,9 +27,9 @@ Create RSS feeds from anything. Point at any URL — website, YouTube channel, o
 ## Tech Stack
 
 - **Runtime:** Node.js + Express
-- **Database:** PostgreSQL (Supabase or self-hosted)
+- **Database:** PostgreSQL
 - **Styling:** Tailwind CSS v4 + daisyUI
-- **Hosting:** Docker (self-hosted) or Vercel (serverless)
+- **Hosting:** Docker (self-hosted)
 - **Language:** TypeScript
 
 ## Getting Started
@@ -42,7 +38,7 @@ Create RSS feeds from anything. Point at any URL — website, YouTube channel, o
 
 - Node.js 18+
 - npm
-- Supabase account (for database)
+- PostgreSQL (or use Docker Compose which bundles it)
 - YouTube Data API v3 key (optional, for YouTube feeds)
 
 ### Installation
@@ -57,78 +53,17 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your Supabase credentials
+# Edit .env with your PostgreSQL connection details
 ```
 
 ### Environment Variables
 
 ```
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=postgresql://rssuser:rsspassword@localhost:5432/rssservice
 BASE_URL=http://localhost:3000
-CRON_SECRET=your_cron_secret  # Required for scheduled auto-refresh (generate with: openssl rand -hex 32)
 ```
 
-### Database Setup
-
-Run the following SQL in your Supabase SQL Editor:
-
-```sql
--- Feeds table
-CREATE TABLE IF NOT EXISTS feeds (
-  id TEXT PRIMARY KEY,
-  slug TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  url TEXT,
-  selectors TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  item_limit INTEGER DEFAULT 100,
-  refresh_interval_minutes INTEGER,          -- NULL = manual only; 15, 30, 60, 1440 = scheduled
-  next_refresh_at TIMESTAMPTZ,              -- When the feed should next be refreshed
-  refresh_status TEXT DEFAULT 'idle',       -- idle | refreshing | error
-  last_refresh_error TEXT,                  -- Error message from last failed refresh
-  feed_type TEXT NOT NULL DEFAULT 'web',   -- web | youtube | reddit
-  platform_config JSONB NOT NULL DEFAULT '{}'  -- Platform-specific config (channelId, playlistId, etc.)
-);
-
--- Items table
-CREATE TABLE IF NOT EXISTS items (
-  id TEXT PRIMARY KEY,
-  feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
-  title TEXT,
-  link TEXT,
-  description TEXT,
-  pub_date TIMESTAMPTZ,
-  guid TEXT UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Settings table (API keys)
-CREATE TABLE IF NOT EXISTS settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_feeds_feed_type ON feeds(feed_type);
-CREATE INDEX IF NOT EXISTS idx_items_feed_id ON items(feed_id);
-CREATE INDEX IF NOT EXISTS idx_items_pub_date ON items(pub_date DESC);
-CREATE INDEX IF NOT EXISTS idx_feeds_slug ON feeds(slug);
-CREATE INDEX IF NOT EXISTS idx_feeds_next_refresh ON feeds(next_refresh_at) WHERE next_refresh_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_feeds_refresh_status ON feeds(refresh_status);
-
--- Enable RLS
-ALTER TABLE feeds ENABLE ROW LEVEL SECURITY;
-ALTER TABLE items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
-
--- Policies (allow all for single-user app)
-CREATE POLICY "Allow all on feeds" ON feeds FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on items" ON items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on settings" ON settings FOR ALL USING (true) WITH CHECK (true);
-```
+Database migrations run automatically on startup via `node-pg-migrate`.
 
 ### YouTube Setup
 
@@ -261,14 +196,6 @@ GET /api/feeds/:id/export?format=atom
 
 Download feed as XML file.
 
-### Cron Scheduler (Internal)
-
-```
-GET /api/cron/scheduler
-Authorization: Bearer <CRON_SECRET>
-```
-
-Called automatically by Vercel Cron. Refreshes due feeds (up to 5 per run) across all feed types. Requires `CRON_SECRET` environment variable.
 
 ## Pages
 
@@ -314,22 +241,7 @@ curl http://localhost:3000/health
 
 The compose file uses an external `homelab-network` network, making it easy to connect with a reverse proxy (Caddy, nginx, Traefik). If you don't need an external network, remove the `networks` sections from `docker-compose.yml` and Docker will create an internal one automatically.
 
-Auto-refresh runs in-process — no external cron needed.
-
-### Vercel (Serverless)
-
-Configured with:
-- **Memory:** 1024 MB (for headless browser)
-- **Max Duration:** 60 seconds (for browser-based fetching)
-
-### Auto-Refresh Setup (Vercel)
-
-Vercel Cron triggers the scheduler on a schedule configured in `vercel.json`. To enable auto-refresh in production:
-
-1. Generate a cron secret: `openssl rand -hex 32`
-2. Add `CRON_SECRET` to your Vercel Dashboard environment variables
-3. Vercel Hobby plan limits cron to once per day (`0 0 * * *`). Upgrade to Pro for higher frequency.
-4. **Self-hosted** (Docker) auto-refresh runs in-process with no limits
+Auto-refresh runs in-process via node-cron — no external cron needed.
 
 ## License
 
