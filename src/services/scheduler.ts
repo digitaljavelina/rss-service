@@ -254,11 +254,12 @@ export async function refreshDueFeeds(): Promise<{
           Date.now() + (feed.refresh_interval_minutes ?? 60) * 60 * 1000
         ).toISOString();
 
-        // Update feed: error state
+        // Update feed: return to idle so it's retried next tick; error is
+        // surfaced via last_refresh_error.
         await supabase
           .from('feeds')
           .update({
-            refresh_status: 'error',
+            refresh_status: 'idle',
             next_refresh_at: nextRefreshAt,
             last_refresh_error: errorMessage,
             updated_at: new Date().toISOString(),

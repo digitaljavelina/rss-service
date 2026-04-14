@@ -89,13 +89,11 @@
       return wrapper;
     }
 
-    if (status === 'error') {
+    if (feed.last_refresh_error) {
       const badge = document.createElement('span');
       badge.className = 'badge badge-error cursor-help';
       badge.textContent = 'Error';
-      if (feed.last_refresh_error) {
-        badge.setAttribute('title', feed.last_refresh_error);
-      }
+      badge.setAttribute('title', feed.last_refresh_error);
       return badge;
     }
 
